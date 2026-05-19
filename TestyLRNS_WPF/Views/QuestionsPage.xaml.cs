@@ -214,7 +214,7 @@ namespace TestyLRNS_WPF.Views
 
         private void BtnAddQuestion_Click(object sender, RoutedEventArgs e)
         {
-            /* ODPOZNÁMKUJ PO VYTVOŘENÍ OKNA AddQuestionDialog (Jako Window WPF)
+
             var dialog = new AddQuestionDialog(_currentUser);
             
             bool? result = dialog.ShowDialog();
@@ -224,7 +224,7 @@ namespace TestyLRNS_WPF.Views
                 _questionRepository.Add(dialog.NewQuestion);
                 RefreshData();
             }
-            */
+            
         }
 
         private void BtnEdit_Click(object sender, RoutedEventArgs e)
@@ -234,9 +234,10 @@ namespace TestyLRNS_WPF.Views
                 var question = _questionRepository.GetById(questionId);
                 if (question == null) return;
 
-                /* ODPOZNÁMKUJ PO VYTVOŘENÍ OKNA AddQuestionDialog
+                // Odpoznámkováno a přidáno vycentrování nad hlavní aplikaci
                 var dialog = new AddQuestionDialog(_currentUser, question);
-                
+                dialog.Owner = Window.GetWindow(this);
+
                 bool? result = dialog.ShowDialog();
 
                 if (result == true && dialog.NewQuestion != null)
@@ -244,7 +245,6 @@ namespace TestyLRNS_WPF.Views
                     _questionRepository.Update(dialog.NewQuestion);
                     RefreshData();
                 }
-                */
             }
         }
 

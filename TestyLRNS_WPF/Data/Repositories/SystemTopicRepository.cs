@@ -37,5 +37,13 @@ namespace TestyLRNS_WPF.Data.Repositories
             command.Parameters.AddWithValue("@unit", topic.Unit);
             command.ExecuteNonQuery();
         }
+
+        public void SoftDelete(int id)
+        {
+            using var connection = DatabaseHelper.GetConnection();
+            using var command = new SqliteCommand("UPDATE SystemTopics SET is_active = 0 WHERE id = @id;", connection);
+            command.Parameters.AddWithValue("@id", id);
+            command.ExecuteNonQuery();
+        }
     }
 }

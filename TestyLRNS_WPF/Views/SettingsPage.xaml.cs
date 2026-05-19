@@ -4,7 +4,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-// Zkontroluj, že tyto namespacy přesně sedí s tvým WPF projektem:
 using TestyLRNS_WPF.Core;
 using TestyLRNS_WPF.Data.Repositories;
 using TestyLRNS_WPF.Models;
@@ -14,8 +13,10 @@ namespace TestyLRNS_WPF.Views
 {
     public partial class SettingsPage : Page
     {
+        // POUZE JEDNA SADA DEFINIC
         private readonly UserRepository _userRepo;
         private readonly PersonRepository _personRepo;
+        private readonly SystemTopicRepository _topicRepo;
         private readonly User _currentUser;
         private List<Person> _adminBasePersons = new();
 
@@ -24,15 +25,13 @@ namespace TestyLRNS_WPF.Views
             this.InitializeComponent();
             _userRepo = new UserRepository();
             _personRepo = new PersonRepository();
+            _topicRepo = new SystemTopicRepository();
+            _currentUser = SessionManager.CurrentUser!;
 
-            if (SessionManager.CurrentUser != null)
-            {
-                _currentUser = SessionManager.CurrentUser;
-
-                InitializeAddUserForm();
-                LoadAdminPersonsDropdown();
-                RefreshUsersList();
-            }
+            InitializeAddUserForm();
+            LoadAdminPersonsDropdown();
+            RefreshUsersList();
+            InitializeTopicsManagement();
         }
 
         private void InitializeAddUserForm()
@@ -145,7 +144,10 @@ namespace TestyLRNS_WPF.Views
             return stringBuilder.ToString().Normalize(System.Text.NormalizationForm.FormC);
         }
 
-        private void CbNewRole_SelectionChanged(object sender, SelectionChangedEventArgs e) { }
+        private void CbNewRole_SelectionChanged(object sender, SelectionChangedEventArgs e) 
+        {
+            UpdateLoginPreview();
+        }
 
         private void BtnChangePassword_Click(object sender, RoutedEventArgs e)
         {
@@ -316,6 +318,80 @@ namespace TestyLRNS_WPF.Views
             }
         }
 
+        // --- LOGIKA PRO SPRÁVU TÉMAT ---
+
+        private void InitializeTopicsManagement()
+        {
+            if (_currentUser.Role == "Instruktor")
+            {
+                string targetUnit = _currentUser.Unit ?? "SZP";
+                for (int i = 0; i < CbTopicUnit.Items.Count; i++)
+                {
+                    if ((CbTopicUnit.Items[i] as ComboBoxItem)?.Content?.ToString() == targetUnit)
+                    {
+                        CbTopicUnit.SelectedIndex = i;
+                        break;
+                    }
+                }
+                CbTopicUnit.IsEnabled = false;
+            }
+            else
+            {
+                CbTopicUnit.SelectedIndex = 0;
+            }
+
+            RefreshTopicsList();
+        }
+
+        private void CbTopicUnit_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            RefreshTopicsList();
+        }
+
+        private void RefreshTopicsList()
+        {
+            if (CbTopicUnit == null || CbTopicUnit.SelectedItem == null || _topicRepo == null) return;
+
+            string selectedUnit = (CbTopicUnit.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "";
+
+            var topics = _topicRepo.GetAllActiveByUnit(selectedUnit);
+            LvTopics.ItemsSource = topics.OrderBy(t => t.Name).ToList();
+        }
+
+        private void BtnAddTopic_Click(object sender, RoutedEventArgs e)
+        {
+            TxtTopicMessage.Visibility = Visibility.Collapsed;
+            string newTopicName = TxtNewTopic.Text.Trim();
+
+            if (string.IsNullOrEmpty(newTopicName)) return;
+
+            string selectedUnit = (CbTopicUnit.SelectedItem as ComboBoxItem)?.Content?.ToString() ?? "";
+
+            var newTopic = new SystemTopic
+            {
+                Name = newTopicName,
+                Unit = selectedUnit,
+                IsActive = true
+            };
+
+            _topicRepo.Add(newTopic);
+
+            TxtNewTopic.Text = "";
+            ShowTopicMessage($"Téma '{newTopicName}' bylo úspěšně přidáno.", true);
+            RefreshTopicsList();
+        }
+
+        private void BtnDeleteTopic_Click(object sender, RoutedEventArgs e)
+        {
+            if (sender is Button btn && btn.Tag is int topicId)
+            {
+                _topicRepo.SoftDelete(topicId);
+                RefreshTopicsList();
+            }
+        }
+
+        // --- POMOCNÉ METODY PRO VÝPIS ZPRÁV ---
+
         private void ShowPasswordMessage(string text, bool isSuccess)
         {
             TxtPasswordMessage.Text = text;
@@ -337,6 +413,72 @@ namespace TestyLRNS_WPF.Views
             TxtUserMessage.Visibility = Visibility.Visible;
         }
 
+        private void ShowTopicMessage(string text, bool isSuccess)
+        {
+            TxtTopicMessage.Text = text;
+            TxtTopicMessage.Foreground = new SolidColorBrush(isSuccess ? Colors.LightGreen : Colors.Salmon);
+            TxtTopicMessage.Visibility = Visibility.Visible;
+        }
+        private void CbNewAirport_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateLoginPreview();
+        }
+
+        private void OnNewUserInfoChanged(object sender, TextChangedEventArgs e)
+        {
+            UpdateLoginPreview();
+        }
+
+        // VNITŘNÍ METODA PRO ŽIVÝ VÝPOČET NÁHLEDU LOGINU
+        private void UpdateLoginPreview()
+        {
+            // Opatření pro případ, že se metoda spustí ještě před plným načtením prvků z XAMLu
+            if (TxtGeneratedLoginPreview == null || TxtNewFirstName == null || TxtNewLastName == null || CbNewRole == null || CbNewAirport == null) return;
+
+            string firstName = TxtNewFirstName.Text.Trim();
+            string lastName = TxtNewLastName.Text.Trim();
+
+            string role = "Instruktor";
+            string? airport = null;
+
+            if (_currentUser.Role == "LokalniAdmin")
+            {
+                role = "Instruktor";
+                airport = _currentUser.AirportIcao;
+            }
+            else
+            {
+                var selectedRoleItem = CbNewRole.SelectedItem as ComboBoxItem;
+                role = selectedRoleItem?.Content?.ToString() ?? "Instruktor";
+
+                if (role != "SuperAdmin" && CbNewAirport.SelectedItem != null)
+                {
+                    airport = (CbNewAirport.SelectedItem as ComboBoxItem)?.Content?.ToString()?.Split(' ')[0];
+                }
+            }
+
+            // Pokud vytváříme Lokálního Admina, loginem je kód letiště
+            if (role == "LokalniAdmin")
+            {
+                TxtGeneratedLoginPreview.Text = !string.IsNullOrEmpty(airport) ? airport.ToLower() : "lkkb";
+            }
+            else
+            {
+                // Pokud jsou obě pole prázdná, vrátíme výchozí text
+                if (string.IsNullOrEmpty(firstName) && string.IsNullOrEmpty(lastName))
+                {
+                    TxtGeneratedLoginPreview.Text = "Zadejte jméno...";
+                    return;
+                }
+
+                string cleanLastName = RemoveDiacritics(lastName).ToLower().Replace(" ", "");
+                string firstLetter = firstName.Length > 0 ? RemoveDiacritics(firstName.Substring(0, 1)).ToLower() : "";
+
+                TxtGeneratedLoginPreview.Text = $"{cleanLastName}{firstLetter}";
+            }
+        }
+
+        // --- MODEL PRO ZOBRAZENÍ ÚČTŮ ---
         public class UserManagementViewModel
         {
             public int Id { get; set; }
