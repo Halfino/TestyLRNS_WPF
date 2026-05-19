@@ -1,0 +1,73 @@
+﻿<Window x:Class="TestyLRNS_WPF.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Testy LRNS - Zkušební systém" 
+        Height="1000" Width="1650"
+        WindowStartupLocation="CenterScreen"
+        Background="#202020">
+
+    <Grid>
+        <ui:NavigationView x:Name="MainNavigation" 
+                           PaneDisplayMode="Left" 
+                           IsBackButtonVisible="Collapsed"
+                           ItemInvoked="MainNavigation_ItemInvoked">
+
+            <ui:NavigationView.PaneHeader>
+                <StackPanel Orientation="Horizontal" Margin="12,10,0,10">
+                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE707;" FontSize="24" Foreground="#00509E" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <TextBlock Text="LRNS AČR" FontWeight="Bold" FontSize="18" VerticalAlignment="Center"/>
+                </StackPanel>
+            </ui:NavigationView.PaneHeader>
+
+            <ui:NavigationView.MenuItems>
+                <ui:NavigationViewItem Tag="Dashboard" Content="Dashboard">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Glyph="&#xE80F;" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Tag="Persons" Content="Správa techniků">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Glyph="&#xE716;" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Tag="Questions" Content="Databáze otázek">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Glyph="&#xE8F1;" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItemSeparator />
+
+                <ui:NavigationViewItem Tag="Generator" Content="Generátor testů">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Glyph="&#xE8A5;" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
+                <ui:NavigationViewItem Tag="History" Content="Historie přezkoušení">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Glyph="&#xE8C7;" />
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.MenuItems>
+
+            <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Tag="Logout" Content="Odhlásit se" Foreground="#FF6666">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Glyph="&#xE7E8;" Foreground="#FF4444"/>
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+            </ui:NavigationView.FooterMenuItems>
+
+            <Grid>
+                <Frame x:Name="ContentFrame" NavigationUIVisibility="Hidden" />
+                <Frame x:Name="RootFrame" NavigationUIVisibility="Hidden" Visibility="Collapsed"/>
+            </Grid>
+
+        </ui:NavigationView>
+    </Grid>
+</Window>

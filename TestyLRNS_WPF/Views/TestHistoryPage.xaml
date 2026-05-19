@@ -1,0 +1,125 @@
+﻿<Page x:Class="TestyLRNS_WPF.Views.TestHistoryPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+      xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+      xmlns:ui="http://schemas.modernwpf.com/2019"
+      mc:Ignorable="d"
+      Background="Transparent"
+      TextElement.Foreground="White"
+      Title="TestHistoryPage">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <WrapPanel Grid.Row="0" Margin="0,0,0,20">
+
+            <StackPanel Margin="0,0,15,10">
+                <TextBlock Text="Rok přezkoušení" Foreground="LightGray" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CbYear" Width="150" SelectionChanged="Filter_SelectionChanged"/>
+            </StackPanel>
+
+            <StackPanel Margin="0,0,15,10">
+                <TextBlock Text="Měsíc" Foreground="LightGray" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CbMonth" Width="180" SelectionChanged="Filter_SelectionChanged">
+                    <ComboBoxItem Content="Všechny měsíce"/>
+                    <ComboBoxItem Content="Leden"/>
+                    <ComboBoxItem Content="Únor"/>
+                    <ComboBoxItem Content="Březen"/>
+                    <ComboBoxItem Content="Duben"/>
+                    <ComboBoxItem Content="Květen"/>
+                    <ComboBoxItem Content="Červen"/>
+                    <ComboBoxItem Content="Červenec"/>
+                    <ComboBoxItem Content="Srpen"/>
+                    <ComboBoxItem Content="Září"/>
+                    <ComboBoxItem Content="Říjen"/>
+                    <ComboBoxItem Content="Listopad"/>
+                    <ComboBoxItem Content="Prosinec"/>
+                </ComboBox>
+            </StackPanel>
+
+            <StackPanel Margin="0,0,15,10">
+                <TextBlock Text="Odbornost" Foreground="LightGray" Margin="0,0,0,4"/>
+                <ComboBox x:Name="CbUnitFilter" Width="140" SelectionChanged="Filter_SelectionChanged">
+                    <ComboBoxItem Content="Všechny"/>
+                    <ComboBoxItem Content="SZP"/>
+                    <ComboBoxItem Content="RNS"/>
+                    <ComboBoxItem Content="RSP"/>
+                    <ComboBoxItem Content="OSZ"/>
+                    <ComboBoxItem Content="LSLPS"/>
+                </ComboBox>
+            </StackPanel>
+
+            <TextBlock x:Name="TxtInfo" VerticalAlignment="Bottom" Foreground="Gray" Margin="10,0,0,15"/>
+        </WrapPanel>
+
+        <Border Grid.Row="1" Background="#202020" CornerRadius="8" Padding="10">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                </Grid.RowDefinitions>
+
+                <Border Grid.Row="0" Padding="10,5,10,10" Margin="0,0,0,5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="2*"/>
+                            <ColumnDefinition Width="85"/>
+                            <ColumnDefinition Width="1.8*"/>
+                            <ColumnDefinition Width="1.2*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Grid.ColumnSpan="7" Margin="-10,0,-10,0" VerticalAlignment="Bottom"/>
+
+                        <TextBlock Grid.Column="0" Text="Technik" FontWeight="Bold" Foreground="Gray" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="1" Text="Odbornost" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="Typ testu" FontWeight="Bold" Foreground="Gray" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                        <TextBlock Grid.Column="3" Text="Datum generování" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="4" Text="Výsledek (Body)" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="5" Text="Hodnocení" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="6" Text="Dokument" FontWeight="Bold" Foreground="Gray" Width="80" TextAlignment="Center" VerticalAlignment="Center"/>
+                    </Grid>
+                </Border>
+
+                <ScrollViewer Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                    <ItemsControl x:Name="LvHistory">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Border Padding="10,6,10,6" BorderBrush="#2D2D2D" BorderThickness="0,0,0,1">
+                                    <Grid VerticalAlignment="Center">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="2*"/>
+                                            <ColumnDefinition Width="85"/>
+                                            <ColumnDefinition Width="1.8*"/>
+                                            <ColumnDefinition Width="1.2*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="Auto"/>
+                                        </Grid.ColumnDefinitions>
+
+                                        <TextBlock Grid.Column="0" Text="{Binding PersonName}" VerticalAlignment="Center" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
+                                        <TextBlock Grid.Column="1" Text="{Binding Unit}" VerticalAlignment="Center" HorizontalAlignment="Center" Foreground="#4DA6FF" FontWeight="SemiBold" FontSize="13"/>
+                                        <TextBlock Grid.Column="2" Text="{Binding TestType}" VerticalAlignment="Center" Foreground="LightGray" TextTrimming="CharacterEllipsis" Margin="10,0,0,0"/>
+                                        <TextBlock Grid.Column="3" Text="{Binding DateGeneratedString}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                                        <TextBlock Grid.Column="4" Text="{Binding DisplayScore}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold"/>
+                                        <TextBlock Grid.Column="5" Text="{Binding Status}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="ExtraBold" Foreground="{Binding StatusColor}"/>
+
+                                        <Button Grid.Column="6" Click="BtnOpenPdf_Click" Tag="{Binding TestId}" Width="45" Height="32" HorizontalAlignment="Center">
+                                            <ui:FontIcon Glyph="&#xE8A5;" FontSize="14" Foreground="#4DA6FF"/>
+                                        </Button>
+                                    </Grid>
+                                </Border>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </Grid>
+        </Border>
+    </Grid>
+</Page>

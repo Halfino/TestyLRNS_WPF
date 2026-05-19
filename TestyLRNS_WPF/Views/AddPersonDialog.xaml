@@ -1,0 +1,115 @@
+﻿<Window x:Class="TestyLRNS_WPF.Views.AddPersonDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        mc:Ignorable="d"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Karta vojenského technika" 
+        Height="420" Width="660"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="#1E1E1E"
+        TextElement.Foreground="White">
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+
+            <Grid Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1.5*"/>
+                    <ColumnDefinition Width="1.5*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                    <TextBlock Text="Hodnost" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <TextBox x:Name="TxtRank" ui:ControlHelper.PlaceholderText="npor."/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                    <TextBlock Text="Titul" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <TextBox x:Name="TxtTitle" ui:ControlHelper.PlaceholderText="Ing."/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2" Margin="0,0,10,0">
+                    <TextBlock Text="Jméno" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <TextBox x:Name="TxtFirstName" ui:ControlHelper.PlaceholderText="Jan"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="3">
+                    <TextBlock Text="Příjmení" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <TextBox x:Name="TxtLastName" ui:ControlHelper.PlaceholderText="Novák"/>
+                </StackPanel>
+            </Grid>
+
+            <Grid Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1.5*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                    <TextBlock Text="Odbornost" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="CbUnit" HorizontalAlignment="Stretch">
+                        <ComboBoxItem Content="SZP"/>
+                        <ComboBoxItem Content="RNS"/>
+                        <ComboBoxItem Content="RSP"/>
+                        <ComboBoxItem Content="OSZ"/>
+                        <ComboBoxItem Content="LSLPS"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="Domovská základna" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="CbAirport" HorizontalAlignment="Stretch">
+                        <ComboBoxItem Content="LKKB (Kbely)"/>
+                        <ComboBoxItem Content="LKCV (Čáslav)"/>
+                        <ComboBoxItem Content="LKNA (Náměšť)"/>
+                        <ComboBoxItem Content="LKPD (Pardubice)"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+
+            <Grid Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="1*"/>
+                    <ColumnDefinition Width="1.2*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="0,0,15,0">
+                    <TextBlock Text="Znalostní třída / Funkce" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="CbClass" HorizontalAlignment="Stretch">
+                        <ComboBoxItem Content="Typový výcvik"/>
+                        <ComboBoxItem Content="Třetí třída"/>
+                        <ComboBoxItem Content="Druhá třída"/>
+                        <ComboBoxItem Content="První třída"/>
+                        <ComboBoxItem Content="Instruktor"/>
+                        <ComboBoxItem Content="Inspektor"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="Platnost přezkoušení do" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <DatePicker x:Name="DpValidUntil" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+            </Grid>
+
+            <TextBlock x:Name="TxtErrorMessage" Foreground="#FF5555" FontWeight="SemiBold" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,5,0,0"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="Uložit technika" Width="130" Height="35" Click="BtnSave_Click" 
+                    Background="#00509E" Foreground="White" Margin="0,0,10,0"/>
+            <Button Content="Zrušit" Background="Red" Width="100" Height="35" Click="BtnCancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>

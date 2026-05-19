@@ -1,0 +1,194 @@
+﻿<Window x:Class="TestyLRNS_WPF.Views.AddQuestionDialog"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:ui="http://schemas.modernwpf.com/2019"
+        mc:Ignorable="d"
+        ui:WindowHelper.UseModernWindowStyle="True"
+        Title="Nová otázka do databáze" 
+        Height="650" Width="750"
+        WindowStartupLocation="CenterScreen"
+        ResizeMode="NoResize"
+        ShowInTaskbar="False"
+        Background="#1E1E1E"
+        TextElement.Foreground="White">
+
+    <Window.Resources>
+        <Style TargetType="RadioButton">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="FontSize" Value="14"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="RadioButton">
+                        <Grid Background="Transparent" Margin="0,4">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
+
+                            <Grid Width="20" Height="20" VerticalAlignment="Center">
+                                <Ellipse x:Name="OuterCircle" 
+                                         Stroke="#B0B0B0" 
+                                         StrokeThickness="2" 
+                                         Fill="#252525"/>
+
+                                <Ellipse x:Name="CheckDot" 
+                                         Width="10" 
+                                         Height="10" 
+                                         Fill="#4DA6FF" 
+                                         Visibility="Collapsed"/>
+                            </Grid>
+
+                            <ContentPresenter Grid.Column="1" 
+                                              Margin="12,0,0,0" 
+                                              VerticalAlignment="Center" 
+                                              HorizontalAlignment="Left"/>
+                        </Grid>
+
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="OuterCircle" Property="Stroke" Value="White"/>
+                            </Trigger>
+
+                            <Trigger Property="IsChecked" Value="True">
+                                <Setter TargetName="OuterCircle" Property="Stroke" Value="#4DA6FF"/>
+                                <Setter TargetName="CheckDot" Property="Visibility" Value="Visible"/>
+                            </Trigger>
+
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter TargetName="OuterCircle" Property="Stroke" Value="#555555"/>
+                                <Setter Property="Foreground" Value="#777777"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style TargetType="ui:ToggleSwitch" BasedOn="{StaticResource {x:Type ui:ToggleSwitch}}">
+            <Style.Resources>
+                <SolidColorBrush x:Key="ToggleSwitchStrokeOff" Color="#B0B0B0" />
+                <SolidColorBrush x:Key="ToggleSwitchStrokeOffPointerOver" Color="White" />
+                <SolidColorBrush x:Key="ToggleSwitchThumbBackgroundOff" Color="#E0E0E0" />
+                <SolidColorBrush x:Key="ToggleSwitchContainerBackgroundOn" Color="#00509E" />
+                <SolidColorBrush x:Key="ToggleSwitchThumbBackgroundOn" Color="White" />
+                <SolidColorBrush x:Key="ToggleSwitchStrokeOn" Color="#00509E" />
+            </Style.Resources>
+            <Setter Property="Cursor" Value="Hand"/>
+        </Style>
+    </Window.Resources>
+
+    <Grid Margin="20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <StackPanel Grid.Row="0">
+            <StackPanel Margin="0,0,0,15">
+                <TextBlock Text="Znění zkušební otázky" Foreground="LightGray" Margin="0,0,0,4"/>
+                <TextBox x:Name="TxtQuestionText" AcceptsReturn="True" TextWrapping="Wrap" Height="70"/>
+            </StackPanel>
+
+            <Grid Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                    <TextBlock Text="Formát odpovědi" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="CbType" HorizontalAlignment="Stretch" SelectionChanged="CbType_SelectionChanged">
+                        <ComboBoxItem Content="Test (Výběr z 3 možností)"/>
+                        <ComboBoxItem Content="Otevřená (Psaná odpověď)"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Margin="0,0,10,0" VerticalAlignment="Bottom" HorizontalAlignment="Center">
+                    <TextBlock Text="Provozní výcvik" Foreground="LightGray" Margin="0,0,0,4" HorizontalAlignment="Center"/>
+                    <ui:ToggleSwitch x:Name="TsOperational" OffContent="Ne" OnContent="ANO" Toggled="TsOperational_Toggled"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Rozsah platnosti" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="CbAirport" HorizontalAlignment="Stretch"/>
+                </StackPanel>
+            </Grid>
+
+            <Grid Margin="0,0,0,15">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Grid.Column="0" Margin="0,0,10,0">
+                    <TextBlock Text="Odbornost" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="CbUnit" HorizontalAlignment="Stretch" SelectionChanged="CbUnit_SelectionChanged">
+                        <ComboBoxItem Content="SZP"/>
+                        <ComboBoxItem Content="RNS"/>
+                        <ComboBoxItem Content="RSP"/>
+                        <ComboBoxItem Content="OSZ"/>
+                        <ComboBoxItem Content="LSLPS"/>
+                    </ComboBox>
+                </StackPanel>
+
+                <StackPanel Grid.Column="1" Margin="0,0,10,0">
+                    <TextBlock Text="Systém/Téma" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="CbTopic" ui:ControlHelper.PlaceholderText="Vyberte..." HorizontalAlignment="Stretch"/>
+                </StackPanel>
+
+                <StackPanel Grid.Column="2">
+                    <TextBlock Text="Náročnost" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <ComboBox x:Name="CbClass" HorizontalAlignment="Stretch">
+                        <ComboBoxItem Content="3. třída"/>
+                        <ComboBoxItem Content="2. třída"/>
+                        <ComboBoxItem Content="1. třída"/>
+                    </ComboBox>
+                </StackPanel>
+            </Grid>
+
+            <StackPanel x:Name="PanelAnswers" Margin="0,15,0,0">
+                <TextBlock Text="Možnosti odpovědí (označte správnou)" FontWeight="SemiBold" Margin="0,0,0,10"/>
+
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <RadioButton x:Name="Rb1" GroupName="CorrectAnswer" IsChecked="True"/>
+                    <TextBox x:Name="TxtAns1" Grid.Column="1" ui:ControlHelper.PlaceholderText="Odpověď A" Margin="10,0,0,0"/>
+                </Grid>
+
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <RadioButton x:Name="Rb2" GroupName="CorrectAnswer"/>
+                    <TextBox x:Name="TxtAns2" Grid.Column="1" ui:ControlHelper.PlaceholderText="Odpověď B" Margin="10,0,0,0"/>
+                </Grid>
+
+                <Grid Margin="0,0,0,10">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <RadioButton x:Name="Rb3" GroupName="CorrectAnswer"/>
+                    <TextBox x:Name="TxtAns3" Grid.Column="1" ui:ControlHelper.PlaceholderText="Odpověď C" Margin="10,0,0,0"/>
+                </Grid>
+            </StackPanel>
+
+            <TextBlock x:Name="TxtErrorMessage" Foreground="#FF5555" FontWeight="SemiBold" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,15,0,0"/>
+        </StackPanel>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" HorizontalAlignment="Right" Margin="0,15,0,0">
+            <Button Content="Uložit otázku" Width="130" Height="35" Click="BtnSave_Click" 
+                    Background="#00509E" Foreground="White" Margin="0,0,10,0"/>
+            <Button Content="Zrušit" Background="DarkRed" Width="100" Height="35" Click="BtnCancel_Click"/>
+        </StackPanel>
+    </Grid>
+</Window>
