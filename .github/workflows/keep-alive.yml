@@ -1,0 +1,23 @@
+name: Supabase Keep Alive Ping
+
+# Kdy se má skript spustit
+on:
+  schedule:
+    # Formát Cron: Minuta Hodina Den Měsíc DenVTýdnu
+    # 0 8 * * 1,4 znamená: Každé pondělí (1) a čtvrtek (4) v 8:00 UTC
+    - cron: '0 8 * * 1,4'
+  
+  # Umožní spustit skript kdykoliv ručně přes tlačítko v rozhraní
+  workflow_dispatch: 
+
+jobs:
+  ping-database:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Ping Supabase API
+        # Pošle dotaz na tabulku SystemTopics, omezí výsledek na 1 řádek a načte jen global_id, aby šetřil data.
+        run: |
+          curl -X GET "${{ secrets.SUPABASE_URL }}/SystemTopics?select=global_id&limit=1" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
