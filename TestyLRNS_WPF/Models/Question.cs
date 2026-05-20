@@ -19,6 +19,10 @@ namespace TestyLRNS_WPF.Models
         public bool IsActive { get; set; } = true;
 
         private int _answerCount;
+        // Přidat do Person, Question, Answer, TestResult, SystemTopic, User:
+        public string GlobalId { get; set; } = Guid.NewGuid().ToString();
+        public int SyncStatus { get; set; } = 0; // 0 = Nové/Změněné, 1 = Synchronizováno
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
         public int AnswerCount
         {
             get => _answerCount;

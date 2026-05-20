@@ -1,36 +1,63 @@
 ﻿using System;
 using System.Windows;
-// Přidáme jmenný prostor, kde se nachází tvůj DatabaseHelper
+using System.Net.NetworkInformation;
+using System.Threading.Tasks; // Přidáno pro Task.Run
 using TestyLRNS_WPF.Data;
+using TestyLRNS_WPF.Services;
 
 namespace TestyLRNS_WPF
 {
     public partial class App : Application
     {
-        protected override void OnStartup(StartupEventArgs e)
+        // PŘIDÁNO 'async' aby zde fungoval 'await'
+        protected override async void OnStartup(StartupEventArgs e)
         {
             base.OnStartup(e);
-
-            // 1. Tímto jediným příkazem vnutíme tmavý režim napříč celou aplikací
             ModernWpf.ThemeManager.Current.ApplicationTheme = ModernWpf.ApplicationTheme.Dark;
 
-            // 2. Inicializace SQLite databáze (Vytvoření souboru, tabulek a nahrání výchozích dat)
             try
             {
                 SQLitePCL.Batteries.Init();
                 DatabaseHelper.InitializeDatabase();
+
+                // KONTROLA INTERNETU A PULL PŘI STARTU
+                if (IsInternetAvailable())
+                {
+                    // Vytvoření instance SyncService
+                    var syncService = new SyncService();
+                    await syncService.PullFromServerAsync();
+                }
+                else
+                {
+                    MessageBox.Show(
+                        "Počítač není připojen k internetu. Aplikace běží v plném offline režimu. Synchronizace dat se serverem nyní není možná.",
+                        "Offline režim",
+                        MessageBoxButton.OK,
+                        MessageBoxImage.Information);
+                }
             }
             catch (Exception ex)
             {
-                // Pokud inicializace selže (např. zamčený soubor, práva disku), ukážeme přehledné hlášení
-                MessageBox.Show(
-                    $"Kritická chyba při spouštění aplikace. Nepodařilo se inicializovat databázi zkušebního systému:\n\n{ex.Message}",
-                    "Chyba databáze LRNS",
-                    MessageBoxButton.OK,
-                    MessageBoxImage.Error);
-
-                // Ukončíme aplikaci, protože bez databáze by následně padaly všechny podstránky
+                MessageBox.Show($"Kritická chyba při spouštění: {ex.Message}", "Chyba", MessageBoxButton.OK, MessageBoxImage.Error);
                 Application.Current.Shutdown();
+            }
+        }
+
+        // Velmi rychlá a spolehlivá kontrola konektivity
+        public static bool IsInternetAvailable()
+        {
+            try
+            {
+                using (var ping = new Ping())
+                {
+                    // Zkusíme "pingnout" Google DNS (8.8.8.8) s limitem 2000 ms
+                    PingReply reply = ping.Send("8.8.8.8", 2000);
+                    return reply.Status == IPStatus.Success;
+                }
+            }
+            catch
+            {
+                return false;
             }
         }
     }

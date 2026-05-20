@@ -6,18 +6,14 @@ namespace TestyLRNS_WPF.Data
 {
     public static class DatabaseHelper
     {
-        // Zjistí přesnou složku, kde je aplikace spuštěná (např. bin/Debug/net8.0-windows...)
         private static readonly string DbFolder = AppDomain.CurrentDomain.BaseDirectory;
         private static readonly string DbPath = System.IO.Path.Combine(DbFolder, "testy_lrns.db");
-
-        // Výsledný připojovací řetězec, který teď bude ukazovat na správné místo
         private static readonly string ConnectionString = $"Data Source={DbPath};";
 
         public static SqliteConnection GetConnection()
         {
             var connection = new SqliteConnection(ConnectionString);
             connection.Open();
-            // Aktivace cizích klíčů (Foreign Keys)
             using (var command = new SqliteCommand("PRAGMA foreign_keys = ON;", connection))
             {
                 command.ExecuteNonQuery();
@@ -37,15 +33,15 @@ namespace TestyLRNS_WPF.Data
             EnsureDatabaseExists();
             EnsureTablesExist();
             SeedDefaultData();
-            SeedDummyQuestions(); // PŘIDÁNO: Automaticky vygeneruje testovací otázky, pokud je DB prázdná
+
+            // VYPNUTO PRO PRODUKCI: Máme cloud, nechceme generovat 300 falešných otázek na každém novém PC!
+            // SeedDummyQuestions(); 
         }
 
         private static void EnsureDatabaseExists()
         {
             if (!File.Exists(DbPath))
             {
-                // V Microsoft.Data.Sqlite stačí otevřít připojení a soubor se vytvoří sám.
-                // Pro jistotu ale můžeme vytvořit prázdný soubor správným příkazem:
                 using (File.Create(DbPath)) { }
             }
         }
@@ -59,6 +55,9 @@ namespace TestyLRNS_WPF.Data
             command.CommandText = @"
                 CREATE TABLE IF NOT EXISTS Users (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    global_id TEXT UNIQUE NOT NULL,
+                    sync_status INTEGER DEFAULT 0,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     username TEXT UNIQUE NOT NULL,
                     password_hash TEXT NOT NULL,
                     role TEXT NOT NULL,
@@ -70,6 +69,9 @@ namespace TestyLRNS_WPF.Data
 
                 CREATE TABLE IF NOT EXISTS SystemTopics (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    global_id TEXT UNIQUE NOT NULL,
+                    sync_status INTEGER DEFAULT 0,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     name TEXT NOT NULL,
                     unit TEXT NOT NULL,
                     is_active BOOLEAN DEFAULT 1
@@ -77,19 +79,25 @@ namespace TestyLRNS_WPF.Data
 
                 CREATE TABLE IF NOT EXISTS Persons (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    rank TEXT,             -- Hodnost (např. npor., prap.)
-                    title_before TEXT,     -- Titul před jménem (např. Ing.)
+                    global_id TEXT UNIQUE NOT NULL,
+                    sync_status INTEGER DEFAULT 0,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                    rank TEXT,
+                    title_before TEXT,
                     first_name TEXT NOT NULL,
                     last_name TEXT NOT NULL,
                     knowledge_class INTEGER NOT NULL,
-                    valid_until TEXT NOT NULL,
+                    valid_until DATETIME NOT NULL,
                     unit TEXT,
                     airport_icao TEXT,
-                    is_active INTEGER NOT NULL DEFAULT 1
+                    is_active BOOLEAN DEFAULT 1
                 );
 
                 CREATE TABLE IF NOT EXISTS Questions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    global_id TEXT UNIQUE NOT NULL,
+                    sync_status INTEGER DEFAULT 0,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     text TEXT NOT NULL,
                     written BOOLEAN NOT NULL,
                     knowledge_class INTEGER NOT NULL,
@@ -102,6 +110,9 @@ namespace TestyLRNS_WPF.Data
 
                 CREATE TABLE IF NOT EXISTS Answers (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    global_id TEXT UNIQUE NOT NULL,
+                    sync_status INTEGER DEFAULT 0,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     question_id INTEGER NOT NULL,
                     text TEXT NOT NULL,
                     is_correct BOOLEAN NOT NULL,
@@ -111,6 +122,9 @@ namespace TestyLRNS_WPF.Data
 
                 CREATE TABLE IF NOT EXISTS TestResults (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    global_id TEXT UNIQUE NOT NULL,
+                    sync_status INTEGER DEFAULT 0,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     person_id INTEGER NOT NULL,
                     date_generated DATETIME NOT NULL,
                     date_completed DATETIME,
@@ -126,6 +140,9 @@ namespace TestyLRNS_WPF.Data
 
                 CREATE TABLE IF NOT EXISTS TestQuestions (
                     id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    global_id TEXT UNIQUE NOT NULL,
+                    sync_status INTEGER DEFAULT 0,
+                    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
                     test_id INTEGER NOT NULL,
                     question_id INTEGER NOT NULL,
                     FOREIGN KEY (test_id) REFERENCES TestResults(id) ON DELETE CASCADE,
@@ -139,139 +156,70 @@ namespace TestyLRNS_WPF.Data
         {
             using var connection = GetConnection();
 
-            // 1. Seed Systémů
+            // 1. Seed Systémů s PEVNÝMI (statickými) GUID
             using var checkSystemsCmd = new SqliteCommand("SELECT COUNT(*) FROM SystemTopics", connection);
             if ((long)checkSystemsCmd.ExecuteScalar() == 0)
             {
-                string insertSystems = @"
-                    INSERT INTO SystemTopics (name, unit) VALUES 
-                    ('PAPI', 'SZP'), ('FLASH', 'SZP'), ('ENERGETIKA', 'SZP'), ('VYSKY', 'SZP'),
-                    ('ILS', 'RNS'), ('DME', 'RNS'), ('MKR', 'RNS'), ('NDB', 'RNS'),
-                    ('RL', 'RSP'), ('RP', 'RSP'),
-                    ('VCS', 'LSLPS'), ('LETVIS', 'LSLPS'), ('SITE', 'LSLPS'), ('ENERGETIKA', 'LSLPS');";
-                using var insertSysCmd = new SqliteCommand(insertSystems, connection);
-                insertSysCmd.ExecuteNonQuery();
-            }
+                var topics = new (string Gid, string Name, string Unit)[] {
+                    ("11111111-0000-0000-0000-000000000001", "PAPI", "SZP"),
+                    ("11111111-0000-0000-0000-000000000002", "FLASH", "SZP"),
+                    ("11111111-0000-0000-0000-000000000003", "ENERGETIKA", "SZP"),
+                    ("11111111-0000-0000-0000-000000000004", "ICAO CAT I", "SZP"),
+                    ("11111111-0000-0000-0000-000000000005", "ILS", "RNS"),
+                    ("11111111-0000-0000-0000-000000000006", "DME", "RNS"),
+                    ("11111111-0000-0000-0000-000000000007", "MKR", "RNS"),
+                    ("11111111-0000-0000-0000-000000000008", "NDB", "RNS"),
+                    ("11111111-0000-0000-0000-000000000009", "RL-2000", "RSP"),
+                    ("11111111-0000-0000-0000-000000000010", "RP", "RSP"),
+                    ("11111111-0000-0000-0000-000000000011", "VCS", "LSLPS"),
+                    ("11111111-0000-0000-0000-000000000012", "LETVIS", "LSLPS"),
+                    ("11111111-0000-0000-0000-000000000013", "SITE", "LSLPS"),
+                    ("11111111-0000-0000-0000-000000000014", "ENERGETIKA", "LSLPS")
+                };
 
-            // 2. Seed Uživatelů podle nové hierarchie rolí
-            using var checkUsersCmd = new SqliteCommand("SELECT COUNT(*) FROM Users", connection);
-            if ((long)checkUsersCmd.ExecuteScalar() == 0)
-            {
-                // Všechna výchozí konta budou mít pro začátek heslo "123"
-                string defaultPassword = Services.SecurityService.HashPassword("123");
-
-                string insertUsers = @"
-                    INSERT INTO Users (username, password_hash, role, unit, airport_icao, is_active) VALUES 
-                    ('SuperAdmin', @pwd, 'SuperAdmin', NULL, NULL, 1),
-                    ('LKKB', @pwd, 'LokalniAdmin', NULL, 'LKKB', 1),
-                    ('LKCV', @pwd, 'LokalniAdmin', NULL, 'LKCV', 1),
-                    ('LKNA', @pwd, 'LokalniAdmin', NULL, 'LKNA', 1),
-                    ('LKPD', @pwd, 'LokalniAdmin', NULL, 'LKPD', 1),
-                    ('LKKB_novak', @pwd, 'Instruktor', 'SZP', 'LKKB', 1),
-                    ('LKCV_novak', @pwd, 'Instruktor', 'SZP', 'LKCV', 1),
-                    ('LKKB_radar', @pwd, 'Instruktor', 'RSP', 'LKKB', 1);";
-
-                using var insertUserCmd = new SqliteCommand(insertUsers, connection);
-                insertUserCmd.Parameters.AddWithValue("@pwd", defaultPassword);
-                insertUserCmd.ExecuteNonQuery();
-            }
-        }
-
-        // --- NOVÁ METODA PRO GENEROVÁNÍ FIKTIVNÍCH OTÁZEK ---
-        private static void SeedDummyQuestions()
-        {
-            using var connection = GetConnection();
-
-            // Ověření, jestli už tam otázky nejsou. Pokud ano, přeskočíme, ať se neduplikují.
-            using var checkCmd = new SqliteCommand("SELECT COUNT(*) FROM Questions", connection);
-            if ((long)checkCmd.ExecuteScalar() > 0) return;
-
-            var random = new Random(100);
-            string[] units = { "SZP", "RNS", "RSP", "OSZ", "LSLPS" };
-
-            // Systémy podle tvého Seedu výše
-            string[] topicsSZP = { "PAPI", "FLASH", "ENERGETIKA", "VYSKY" };
-            string[] topicsRNS = { "ILS", "DME", "MKR", "NDB" };
-            string[] topicsRSP = { "RL", "RP" };
-            string[] topicsLSLPS = { "VCS", "LETVIS", "SITE", "ENERGETIKA" };
-
-            // Vyšší šance na globální otázku (vícekrát null)
-            string?[] airports = { null, null, null, null, "LKKB", "LKCV", "LKNA", "LKPD" };
-
-            using var transaction = connection.BeginTransaction();
-            try
-            {
-                // Vygenerujeme 300 testovacích otázek
-                for (int i = 1; i <= 300; i++)
+                using var transaction = connection.BeginTransaction();
+                foreach (var t in topics)
                 {
-                    string unit = units[random.Next(units.Length)];
-                    string? topic = null;
-
-                    // Někdy necháme téma prázdné (Obecná otázka)
-                    if (random.Next(100) < 80 && unit != "OSZ")
-                    {
-                        switch (unit)
-                        {
-                            case "SZP": topic = topicsSZP[random.Next(topicsSZP.Length)]; break;
-                            case "RNS": topic = topicsRNS[random.Next(topicsRNS.Length)]; break;
-                            case "RSP": topic = topicsRSP[random.Next(topicsRSP.Length)]; break;
-                            case "LSLPS": topic = topicsLSLPS[random.Next(topicsLSLPS.Length)]; break;
-                        }
-                    }
-
-                    string? airport = airports[random.Next(airports.Length)];
-                    int knowledgeClass = random.Next(1, 4); // Třídy 1, 2, nebo 3
-                    bool isWritten = random.Next(100) < 15; // 15 % šance na otevřenou (psanou) otázku
-                    bool isOp = random.Next(100) < 10;      // 10 % šance na provozní výcvik
-
-                    string typeText = isWritten ? "Otevřená" : "Uzavřená";
-                    string qText = $"[TEST ID:{i}] Toto je fiktivní {typeText.ToLower()} otázka pro odbornost {unit}. Jaký postup zvolíte pro zařízení {topic ?? "Všeobecné povahy"}, pokud se jedná o znalosti {knowledgeClass}. třídy?";
-
-                    using var qCmd = new SqliteCommand(@"
-                        INSERT INTO Questions (text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active) 
-                        VALUES (@text, @written, @class, @unit, @topic, @icao, @isOp, 1);
-                        SELECT last_insert_rowid();", connection, transaction);
-
-                    qCmd.Parameters.AddWithValue("@text", qText);
-                    qCmd.Parameters.AddWithValue("@written", isWritten);
-                    qCmd.Parameters.AddWithValue("@class", knowledgeClass);
-                    qCmd.Parameters.AddWithValue("@unit", (object?)unit ?? DBNull.Value);
-                    qCmd.Parameters.AddWithValue("@topic", (object?)topic ?? DBNull.Value);
-                    qCmd.Parameters.AddWithValue("@icao", (object?)airport ?? DBNull.Value);
-                    qCmd.Parameters.AddWithValue("@isOp", isOp);
-
-                    long qId = (long)qCmd.ExecuteScalar();
-
-                    // Pokud to je uzavřená otázka, vygenerujeme 3 odpovědi
-                    if (!isWritten)
-                    {
-                        for (int a = 1; a <= 3; a++)
-                        {
-                            using var aCmd = new SqliteCommand("INSERT INTO Answers (question_id, text, is_correct, is_active) VALUES (@qid, @text, @correct, 1);", connection, transaction);
-                            aCmd.Parameters.AddWithValue("@qid", qId);
-
-                            if (a == 1)
-                            {
-                                // Do databáze dáváme vždy první jako správnou 
-                                // (Tvůj generátor PDF si je pak stejně automaticky zamíchá díky Seedu)
-                                aCmd.Parameters.AddWithValue("@text", $"[SPRÁVNĚ] Toto je fiktivní správná odpověď na testovou otázku č. {i}.");
-                                aCmd.Parameters.AddWithValue("@correct", true);
-                            }
-                            else
-                            {
-                                aCmd.Parameters.AddWithValue("@text", $"[ŠPATNĚ] Zcela nesprávná varianta {a} pro otázku č. {i}.");
-                                aCmd.Parameters.AddWithValue("@correct", false);
-                            }
-                            aCmd.ExecuteNonQuery();
-                        }
-                    }
+                    using var cmd = new SqliteCommand("INSERT INTO SystemTopics (global_id, sync_status, updated_at, name, unit, is_active) VALUES (@gId, 0, CURRENT_TIMESTAMP, @name, @unit, 1)", connection, transaction);
+                    cmd.Parameters.AddWithValue("@gId", t.Gid);
+                    cmd.Parameters.AddWithValue("@name", t.Name);
+                    cmd.Parameters.AddWithValue("@unit", t.Unit);
+                    cmd.ExecuteNonQuery();
                 }
                 transaction.Commit();
             }
-            catch
+
+            // 2. Seed Uživatelů s PEVNÝMI (statickými) GUID
+            using var checkUsersCmd = new SqliteCommand("SELECT COUNT(*) FROM Users", connection);
+            if ((long)checkUsersCmd.ExecuteScalar() == 0)
             {
-                transaction.Rollback();
-                throw;
+                string defaultPassword = Services.SecurityService.HashPassword("123");
+
+                var users = new (string Gid, string Username, string Role, string? Unit, string? Icao)[] {
+                    ("22222222-0000-0000-0000-000000000001", "SuperAdmin", "SuperAdmin", null, null),
+                    ("22222222-0000-0000-0000-000000000002", "LKKB", "LokalniAdmin", null, "LKKB"),
+                    ("22222222-0000-0000-0000-000000000003", "LKCV", "LokalniAdmin", null, "LKCV"),
+                    ("22222222-0000-0000-0000-000000000004", "LKNA", "LokalniAdmin", null, "LKNA"),
+                    ("22222222-0000-0000-0000-000000000005", "LKPD", "LokalniAdmin", null, "LKPD")
+                };
+
+                using var transaction = connection.BeginTransaction();
+                foreach (var u in users)
+                {
+                    using var cmd = new SqliteCommand(@"
+                        INSERT INTO Users (global_id, sync_status, updated_at, username, password_hash, role, unit, airport_icao, is_active) 
+                        VALUES (@gId, 0, CURRENT_TIMESTAMP, @user, @pwd, @role, @unit, @icao, 1)", connection, transaction);
+
+                    cmd.Parameters.AddWithValue("@gId", u.Gid);
+                    cmd.Parameters.AddWithValue("@user", u.Username);
+                    cmd.Parameters.AddWithValue("@pwd", defaultPassword);
+                    cmd.Parameters.AddWithValue("@role", u.Role);
+                    cmd.Parameters.AddWithValue("@unit", (object?)u.Unit ?? DBNull.Value);
+                    cmd.Parameters.AddWithValue("@icao", (object?)u.Icao ?? DBNull.Value);
+
+                    cmd.ExecuteNonQuery();
+                }
+                transaction.Commit();
             }
         }
     }
