@@ -15,6 +15,9 @@ namespace TestyLRNS_WPF.Services
             _questionRepo = new QuestionRepository();
         }
 
+
+
+
         /// <summary>
         /// Vygeneruje unikátní test pro technika podle striktních byznys pravidel (20/80, RBAC, Odbornost).
         /// </summary>

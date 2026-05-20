@@ -21,6 +21,22 @@ namespace TestyLRNS_WPF.Services
         {
             var processedQuestions = PreprocessQuestions(testResult.RandomSeed, questions);
 
+            // --- NAČTENÍ JMÉNA ZADAVATELE ---
+            string creatorFullName = instructor.Username; // Výchozí záloha (login)
+            if (instructor.LinkedPersonId.HasValue)
+            {
+                try
+                {
+                    var personRepo = new TestyLRNS_WPF.Data.Repositories.PersonRepository();
+                    var creatorPerson = personRepo.GetById(instructor.LinkedPersonId.Value);
+                    if (creatorPerson != null && !string.IsNullOrWhiteSpace(creatorPerson.FullNameWithRank))
+                    {
+                        creatorFullName = creatorPerson.FullNameWithRank;
+                    }
+                }
+                catch { /* Ignorovat chybu DB, zůstane login */ }
+            }
+
             Document.Create(container =>
             {
                 // ======================================================
@@ -45,10 +61,8 @@ namespace TestyLRNS_WPF.Services
                     page.Content().AlignMiddle().Column(c =>
                     {
                         string formattedType = GetFormattedTestType(testResult.TestType, questions);
-
                         // Zde je text typu testu (např. vč. odřádkování) vycentrovaný
                         c.Item().AlignCenter().Text(formattedType).ExtraBold().FontSize(22).AlignCenter();
-
                         c.Item().PaddingTop(40);
 
                         string rankPart = !string.IsNullOrEmpty(person.Rank) ? person.Rank + " " : "";
@@ -56,19 +70,29 @@ namespace TestyLRNS_WPF.Services
                         string fullMilitaryName = $"{rankPart}{titlePart}{person.LastName} {person.FirstName}".Trim();
 
                         c.Item().AlignCenter().Text($"Testovaný: {fullMilitaryName}").Bold().FontSize(18);
-
                         // Zde používáme správný převodník třídy přímo z modelu Person!
                         c.Item().AlignCenter().PaddingTop(8).Text($"Odbornost: {person.Unit ?? "Všeobecná"}  |  Třída: {person.KnowledgeClassText}").FontSize(14);
                     });
 
-                    // SPODNÍ ČÁST (Vyrovnaná doprava dolů, nevyplněné datum)
-                    page.Footer().AlignRight().Width(260).Column(f =>
+                    // SPODNÍ ČÁST (Rozdělení na levou a pravou část pomocí Row)
+                    page.Footer().Row(row =>
                     {
-                        f.Item().Text("Mez úspěšnosti: 80 %").Bold();
-                        f.Item().PaddingTop(10).Text("Datum: .......................................");
-                        f.Item().PaddingTop(10).Text("Hodnocení: .......................................").Bold();
-                        f.Item().PaddingTop(10).Text($"Instruktor/Inspektor: .......................................");
-                        f.Item().PaddingTop(25).Text("S hodnocením souhlasím: .......................................");
+                        // LEVÁ STRANA: Zadavatel (Zarovnáno dolů)
+                        row.RelativeItem().AlignBottom().AlignLeft().Column(l =>
+                        {
+                            l.Item().Text("Test vytvořil:").FontSize(9).FontColor(Colors.Grey.Medium);
+                            l.Item().Text(creatorFullName).FontSize(10).Bold();
+                        });
+
+                        // PRAVÁ STRANA: Původní podpisy (Pevná šířka 260)
+                        row.ConstantItem(260).AlignRight().Column(f =>
+                        {
+                            f.Item().Text("Mez úspěšnosti: 80 %").Bold();
+                            f.Item().PaddingTop(10).Text("Datum: .......................................");
+                            f.Item().PaddingTop(10).Text("Hodnocení: .......................................").Bold();
+                            f.Item().PaddingTop(10).Text($"Instruktor/Inspektor: .......................................");
+                            f.Item().PaddingTop(25).Text("S hodnocením souhlasím: .......................................");
+                        });
                     });
                 });
 
@@ -220,10 +244,10 @@ namespace TestyLRNS_WPF.Services
         {
             return icao switch
             {
-                "LKKB" => ("24. základna dopravního letectva Praha - Kbely", "Mladoboleslavská, Praha 9 - Kbely  |  Datová schránka: 8k5x8xx"),
-                "LKCV" => ("21. základna taktického letectva Čáslav", "Chotusice, Čáslav  |  Datová schránka: hjfa8xx"),
-                "LKNA" => ("22. základna vrtulníkového letectva Náměšť nad Oslavou", "Vícenice u Náměště nad Oslavou  |  Datová schránka: xxxxxxx"),
-                "LKPD" => ("Správa letiště Pardubice", "Pražská, Pardubice  |  Datová schránka: yyyyyyy"),
+                "LKKB" => ("24. základna dopravního letectva Praha - Kbely", "Mladoboleslavská 300, Praha 9 - Kbely  |  Datová schránka: hjyaavk"),
+                "LKCV" => ("21. základna taktického letectva Čáslav", "Chotusice, Čáslav  |  Datová schránka: hjyaavk"),
+                "LKNA" => ("22. základna vrtulníkového letectva Náměšť nad Oslavou", "Sedlec, Vícenice u Náměště nad Oslavou  |  Datová schránka: hjyaavk"),
+                "LKPD" => ("Správa letiště Pardubice", "Pražská 100, Pardubice  |  Datová schránka: hjyaavk"),
                 _ => ("Vojenský útvar AČR", "Adresa útvaru  |  Datová schránka: 0000000")
             };
         }
