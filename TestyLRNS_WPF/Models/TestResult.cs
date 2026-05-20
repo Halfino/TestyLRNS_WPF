@@ -17,6 +17,10 @@ namespace TestyLRNS_WPF.Models
         public int? GeneratedByUserId { get; set; }
         public int RandomSeed { get; set; }
         public string? TestType { get; set; }
+        // Přidat do Person, Question, Answer, TestResult, SystemTopic, User:
+        public string GlobalId { get; set; } = Guid.NewGuid().ToString();
+        public int SyncStatus { get; set; } = 0; // 0 = Nové/Změněné, 1 = Synchronizováno
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
 
         public List<int> QuestionIds { get; set; } = new();
     }

@@ -6,9 +6,9 @@
         Title="Testy LRNS - Zkušební systém" 
         Width="1650" 
         Height="1080" 
-
         WindowStartupLocation="CenterScreen"
-        Background="#202020">
+        Background="#202020"
+        Closing="Window_Closing">
 
     <Grid>
         <ui:NavigationView x:Name="MainNavigation" 
@@ -71,5 +71,13 @@
             </Grid>
 
         </ui:NavigationView>
+
+        <Border x:Name="SyncOverlay" Background="#CC000000" Visibility="Collapsed" Panel.ZIndex="999">
+            <StackPanel HorizontalAlignment="Center" VerticalAlignment="Center">
+                <ui:ProgressRing IsActive="True" Width="60" Height="60" Foreground="#4DA6FF" Margin="0,0,0,20"/>
+                <TextBlock Text="Probíhá ukládání a synchronizace dat..." FontSize="20" FontWeight="Bold" Foreground="White" HorizontalAlignment="Center"/>
+                <TextBlock Text="Aplikace se za okamžik sama ukončí." FontSize="14" Foreground="Gray" HorizontalAlignment="Center" Margin="0,10,0,0"/>
+            </StackPanel>
+        </Border>
     </Grid>
 </Window>

@@ -15,6 +15,10 @@ namespace TestyLRNS_WPF.Models
         public string? Unit { get; set; }
         public string? AirportIcao { get; set; }
         public bool IsActive { get; set; }
+        // Přidat do Person, Question, Answer, TestResult, SystemTopic, User:
+        public string GlobalId { get; set; } = Guid.NewGuid().ToString();
+        public int SyncStatus { get; set; } = 0; // 0 = Nové/Změněné, 1 = Synchronizováno
+        public DateTime UpdatedAt { get; set; } = DateTime.Now;
         // Pomocná vlastnost, která složí celé jméno i s hodností pro zobrazení v roletkách nebo tabulkách
         public string FullNameWithRank =>
             $"{Rank} {TitleBefore} {LastName} {FirstName}".Replace("  ", " ").Trim();

@@ -12,7 +12,8 @@ namespace TestyLRNS_WPF.Data.Repositories
             var persons = new List<Person>();
             using var connection = DatabaseHelper.GetConnection();
 
-            string query = "SELECT id, rank, title_before, first_name, last_name, knowledge_class, valid_until, unit, airport_icao, is_active FROM Persons WHERE is_active = 1";
+            // PŘIDÁNO: global_id, sync_status, updated_at
+            string query = "SELECT id, global_id, sync_status, updated_at, rank, title_before, first_name, last_name, knowledge_class, valid_until, unit, airport_icao, is_active FROM Persons WHERE is_active = 1";
 
             if (!string.IsNullOrEmpty(unit)) query += " AND unit = @unit";
             if (!string.IsNullOrEmpty(airportIcao)) query += " AND airport_icao = @icao";
@@ -27,15 +28,18 @@ namespace TestyLRNS_WPF.Data.Repositories
                 persons.Add(new Person
                 {
                     Id = reader.GetInt32(0),
-                    Rank = reader.IsDBNull(1) ? null : reader.GetString(1),
-                    TitleBefore = reader.IsDBNull(2) ? null : reader.GetString(2),
-                    FirstName = reader.GetString(3),
-                    LastName = reader.GetString(4),
-                    KnowledgeClass = reader.GetInt32(5),
-                    ValidUntil = reader.GetDateTime(6),
-                    Unit = reader.IsDBNull(7) ? null : reader.GetString(7),
-                    AirportIcao = reader.IsDBNull(8) ? null : reader.GetString(8),
-                    IsActive = reader.GetBoolean(9)
+                    GlobalId = reader.GetString(1),          // Načtení GlobalId
+                    SyncStatus = reader.GetInt32(2),         // Načtení SyncStatus
+                    UpdatedAt = reader.GetDateTime(3),       // Načtení UpdatedAt
+                    Rank = reader.IsDBNull(4) ? null : reader.GetString(4),
+                    TitleBefore = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    FirstName = reader.GetString(6),
+                    LastName = reader.GetString(7),
+                    KnowledgeClass = reader.GetInt32(8),
+                    ValidUntil = reader.GetDateTime(9),
+                    Unit = reader.IsDBNull(10) ? null : reader.GetString(10),
+                    AirportIcao = reader.IsDBNull(11) ? null : reader.GetString(11),
+                    IsActive = reader.GetBoolean(12)
                 });
             }
             return persons;
@@ -44,7 +48,10 @@ namespace TestyLRNS_WPF.Data.Repositories
         public Person? GetById(int id)
         {
             using var connection = DatabaseHelper.GetConnection();
-            string query = "SELECT id, rank, title_before, first_name, last_name, knowledge_class, valid_until, unit, airport_icao, is_active FROM Persons WHERE id = @id AND is_active = 1;";
+
+            // PŘIDÁNO: global_id, sync_status, updated_at
+            string query = "SELECT id, global_id, sync_status, updated_at, rank, title_before, first_name, last_name, knowledge_class, valid_until, unit, airport_icao, is_active FROM Persons WHERE id = @id AND is_active = 1;";
+
             using var command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@id", id);
 
@@ -54,15 +61,18 @@ namespace TestyLRNS_WPF.Data.Repositories
                 return new Person
                 {
                     Id = reader.GetInt32(0),
-                    Rank = reader.IsDBNull(1) ? null : reader.GetString(1),
-                    TitleBefore = reader.IsDBNull(2) ? null : reader.GetString(2),
-                    FirstName = reader.GetString(3),
-                    LastName = reader.GetString(4),
-                    KnowledgeClass = reader.GetInt32(5),
-                    ValidUntil = reader.GetDateTime(6),
-                    Unit = reader.IsDBNull(7) ? null : reader.GetString(7),
-                    AirportIcao = reader.IsDBNull(8) ? null : reader.GetString(8),
-                    IsActive = reader.GetBoolean(9)
+                    GlobalId = reader.GetString(1),
+                    SyncStatus = reader.GetInt32(2),
+                    UpdatedAt = reader.GetDateTime(3),
+                    Rank = reader.IsDBNull(4) ? null : reader.GetString(4),
+                    TitleBefore = reader.IsDBNull(5) ? null : reader.GetString(5),
+                    FirstName = reader.GetString(6),
+                    LastName = reader.GetString(7),
+                    KnowledgeClass = reader.GetInt32(8),
+                    ValidUntil = reader.GetDateTime(9),
+                    Unit = reader.IsDBNull(10) ? null : reader.GetString(10),
+                    AirportIcao = reader.IsDBNull(11) ? null : reader.GetString(11),
+                    IsActive = reader.GetBoolean(12)
                 };
             }
             return null;
@@ -70,12 +80,16 @@ namespace TestyLRNS_WPF.Data.Repositories
 
         public int Add(Person person)
         {
+            // Pojistka: pokud by GlobalId nebylo vygenerované, vytvoříme ho
+            if (string.IsNullOrEmpty(person.GlobalId)) person.GlobalId = Guid.NewGuid().ToString();
+
             using var connection = DatabaseHelper.GetConnection();
             using var command = new SqliteCommand(
-                "INSERT INTO Persons (rank, title_before, first_name, last_name, knowledge_class, valid_until, unit, airport_icao, is_active) " +
-                "VALUES (@rank, @title, @first, @last, @class, @valid, @unit, @icao, 1); SELECT last_insert_rowid();",
+                "INSERT INTO Persons (global_id, sync_status, updated_at, rank, title_before, first_name, last_name, knowledge_class, valid_until, unit, airport_icao, is_active) " +
+                "VALUES (@globalId, 0, CURRENT_TIMESTAMP, @rank, @title, @first, @last, @class, @valid, @unit, @icao, 1); SELECT last_insert_rowid();",
                 connection);
 
+            command.Parameters.AddWithValue("@globalId", person.GlobalId);
             command.Parameters.AddWithValue("@rank", (object?)person.Rank ?? DBNull.Value);
             command.Parameters.AddWithValue("@title", (object?)person.TitleBefore ?? DBNull.Value);
             command.Parameters.AddWithValue("@first", person.FirstName);
@@ -93,7 +107,8 @@ namespace TestyLRNS_WPF.Data.Repositories
             using var connection = DatabaseHelper.GetConnection();
             using var command = new SqliteCommand(
                 "UPDATE Persons SET rank = @rank, title_before = @title, first_name = @first, last_name = @last, " +
-                "knowledge_class = @class, valid_until = @valid, unit = @unit, airport_icao = @icao WHERE id = @id;",
+                "knowledge_class = @class, valid_until = @valid, unit = @unit, airport_icao = @icao, " +
+                "sync_status = 0, updated_at = CURRENT_TIMESTAMP WHERE id = @id;",
                 connection);
 
             command.Parameters.AddWithValue("@id", person.Id);
@@ -112,7 +127,8 @@ namespace TestyLRNS_WPF.Data.Repositories
         public void SoftDelete(int personId)
         {
             using var connection = DatabaseHelper.GetConnection();
-            using var command = new SqliteCommand("UPDATE Persons SET is_active = 0 WHERE id = @id;", connection);
+            // Při smazání označíme řádek znovu k synchronizaci!
+            using var command = new SqliteCommand("UPDATE Persons SET is_active = 0, sync_status = 0, updated_at = CURRENT_TIMESTAMP WHERE id = @id;", connection);
             command.Parameters.AddWithValue("@id", personId);
             command.ExecuteNonQuery();
         }
