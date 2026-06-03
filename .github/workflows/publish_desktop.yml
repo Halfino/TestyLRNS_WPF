@@ -61,4 +61,4 @@ jobs:
       run: dotnet restore TestyLRNS_WPF.slnx
 
     - name: Kompilace projektu (Build)
-      run: dotnet build TestyLRNS_WPF.slnx --configuration Release -p:Platform=x64 -p:Version=1.0.${{ github.run_number }} --no-restore
+      run: dotnet build TestyLRNS_WPF/TestyLRNS_WPF.csproj --configuration Release -p:Version=1.0.${{ github.run_number }} --no-restore
