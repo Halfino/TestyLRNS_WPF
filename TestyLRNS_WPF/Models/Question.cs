@@ -23,6 +23,7 @@ namespace TestyLRNS_WPF.Models
         public string GlobalId { get; set; } = Guid.NewGuid().ToString();
         public int SyncStatus { get; set; } = 0; // 0 = Nové/Změněné, 1 = Synchronizováno
         public DateTime UpdatedAt { get; set; } = DateTime.Now;
+        public string? ImagePath { get; set; } // Obsahuje pouze název souboru, např. "schema_123.webp"
         public int AnswerCount
         {
             get => _answerCount;

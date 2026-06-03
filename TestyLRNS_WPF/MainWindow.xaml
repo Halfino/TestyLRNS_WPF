@@ -4,8 +4,9 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Testy LRNS - Zkušební systém" 
-        Width="1650" 
-        Height="1080" 
+        Width="1500" 
+        Height="1080"
+        WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         Background="#202020"
         Closing="Window_Closing">

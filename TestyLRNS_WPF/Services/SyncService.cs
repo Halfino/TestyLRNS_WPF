@@ -35,6 +35,9 @@ namespace TestyLRNS_WPF.Services
         // ==============================================================
         public async Task PushToServerAsync()
         {
+            // Odeslání všech lokálních WEBP obrázků jako první
+            await PushImagesAsync();
+
             // ODESÍLÁME V RELAČNÍM POŘADÍ (Kvůli cizím klíčům)
 
             // 1. SystemTopics
@@ -76,7 +79,7 @@ namespace TestyLRNS_WPF.Services
                     updated_at = reader.GetDateTime(reader.GetOrdinal("updated_at")).ToString("o")
                 });
 
-            // 4. Questions
+            // 4. Questions (Přidán image_path)
             await PushDataAsync("Questions", "questions", "SELECT * FROM Questions WHERE sync_status = 0;", reader => new {
                 global_id = reader.GetString(reader.GetOrdinal("global_id")),
                 text = reader.GetString(reader.GetOrdinal("text")),
@@ -87,6 +90,7 @@ namespace TestyLRNS_WPF.Services
                 airport_icao = reader.IsDBNull(reader.GetOrdinal("airport_icao")) ? null : reader.GetString(reader.GetOrdinal("airport_icao")),
                 is_operational_training = reader.GetBoolean(reader.GetOrdinal("is_operational_training")),
                 is_active = reader.GetBoolean(reader.GetOrdinal("is_active")),
+                image_path = reader.IsDBNull(reader.GetOrdinal("image_path")) ? null : reader.GetString(reader.GetOrdinal("image_path")),
                 updated_at = reader.GetDateTime(reader.GetOrdinal("updated_at")).ToString("o")
             });
 
@@ -192,12 +196,12 @@ namespace TestyLRNS_WPF.Services
                 cmd.ExecuteNonQuery();
             });
 
-            // 4. Questions
+            // 4. Questions (Přidán image_path)
             await PullTableAsync("questions", lastSync, (jsonObj, connection, transaction) =>
             {
-                using var cmd = new SqliteCommand(@"INSERT INTO Questions (global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active)
-                    VALUES (@g, 1, @u, @text, @written, @class, @unit, @topic, @icao, @isOp, @act)
-                    ON CONFLICT(global_id) DO UPDATE SET updated_at=@u, text=@text, written=@written, knowledge_class=@class, unit=@unit, system_topic=@topic, airport_icao=@icao, is_operational_training=@isOp, is_active=@act, sync_status=1;", connection, transaction);
+                using var cmd = new SqliteCommand(@"INSERT INTO Questions (global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path)
+                    VALUES (@g, 1, @u, @text, @written, @class, @unit, @topic, @icao, @isOp, @act, @imgPath)
+                    ON CONFLICT(global_id) DO UPDATE SET updated_at=@u, text=@text, written=@written, knowledge_class=@class, unit=@unit, system_topic=@topic, airport_icao=@icao, is_operational_training=@isOp, is_active=@act, image_path=@imgPath, sync_status=1;", connection, transaction);
 
                 cmd.Parameters.AddWithValue("@g", jsonObj.GetProperty("global_id").GetString());
                 cmd.Parameters.AddWithValue("@u", jsonObj.GetProperty("updated_at").GetDateTime());
@@ -209,6 +213,7 @@ namespace TestyLRNS_WPF.Services
                 cmd.Parameters.AddWithValue("@icao", GetStringOrNull(jsonObj, "airport_icao"));
                 cmd.Parameters.AddWithValue("@isOp", jsonObj.GetProperty("is_operational_training").GetBoolean());
                 cmd.Parameters.AddWithValue("@act", jsonObj.GetProperty("is_active").GetBoolean());
+                cmd.Parameters.AddWithValue("@imgPath", GetStringOrNull(jsonObj, "image_path"));
                 cmd.ExecuteNonQuery();
             });
 
@@ -264,12 +269,87 @@ namespace TestyLRNS_WPF.Services
                 cmd.ExecuteNonQuery();
             });
 
+            // Stažení chybějících schémat k otázkám
+            await PullMissingImagesAsync();
+
             // Uložení aktuálního času po úspěšném stáhnutí všeho
             SaveLastSyncTime(DateTime.UtcNow);
         }
 
         // ==============================================================
-        // POMOCNÉ METODY
+        // POMOCNÉ METODY PRO SYNC OBRÁZKŮ (Storage API)
+        // ==============================================================
+
+        private async Task PushImagesAsync()
+        {
+            string imgDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
+            if (!Directory.Exists(imgDir)) return;
+
+            var files = Directory.GetFiles(imgDir, "*.webp");
+            foreach (var file in files)
+            {
+                string fileName = Path.GetFileName(file);
+                byte[] fileBytes = await File.ReadAllBytesAsync(file);
+
+                using var content = new ByteArrayContent(fileBytes);
+                content.Headers.ContentType = new System.Net.Http.Headers.MediaTypeHeaderValue("image/webp");
+
+                string endpoint = $"{_supabaseUrl.Replace("/rest/v1", "")}/storage/v1/object/question-images/{fileName}";
+                var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+                request.Content = content;
+
+                // Přidáno pro povolení přepisu (upsert) pokud soubor už existuje
+                request.Headers.Add("x-upsert", "true");
+
+                // Pošleme na pozadí, abychom zbytečně nezdržovali celou aplikaci pokud by jeden soubor selhal
+                try
+                {
+                    await _httpClient.SendAsync(request);
+                }
+                catch { /* Bezpečná ignorace v rámci robustní offline architektury */ }
+            }
+        }
+
+        private async Task PullMissingImagesAsync()
+        {
+            string imgDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
+            Directory.CreateDirectory(imgDir);
+
+            using var connection = DatabaseHelper.GetConnectionNoPragma();
+            using var command = new SqliteCommand("SELECT image_path FROM Questions WHERE image_path IS NOT NULL AND image_path != '';", connection);
+            using var reader = command.ExecuteReader();
+
+            var imagesToDownload = new List<string>();
+            while (reader.Read())
+            {
+                string img = reader.GetString(0);
+                if (!File.Exists(Path.Combine(imgDir, img)))
+                {
+                    imagesToDownload.Add(img);
+                }
+            }
+
+            foreach (var img in imagesToDownload)
+            {
+                // Používáme public endpoint, protože bucket pro schémata jsme založili jako Public
+                string endpoint = $"{_supabaseUrl.Replace("/rest/v1", "")}/storage/v1/object/public/question-images/{img}";
+                var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
+
+                try
+                {
+                    var response = await _httpClient.SendAsync(request);
+                    if (response.IsSuccessStatusCode)
+                    {
+                        var bytes = await response.Content.ReadAsByteArrayAsync();
+                        await File.WriteAllBytesAsync(Path.Combine(imgDir, img), bytes);
+                    }
+                }
+                catch { /* Bezpečná ignorace lokálního selhání stahování */ }
+            }
+        }
+
+        // ==============================================================
+        // POMOCNÉ METODY PRO SYNC RELAČNÍCH DAT
         // ==============================================================
 
         private async Task PushDataAsync(string localTableName, string remoteEndpoint, string selectQuery, Func<SqliteDataReader, object> rowMapper)
@@ -320,6 +400,7 @@ namespace TestyLRNS_WPF.Services
         private async Task PullTableAsync(string remoteEndpoint, DateTime lastSync, Action<JsonElement, SqliteConnection, SqliteTransaction> saveToDb)
         {
             string formattedTime = lastSync.ToString("yyyy-MM-ddTHH:mm:ss.fffZ");
+
             var request = new HttpRequestMessage(HttpMethod.Get, $"{_supabaseUrl}/{remoteEndpoint}?updated_at=gt.{formattedTime}");
 
             var response = await _httpClient.SendAsync(request);
@@ -340,7 +421,6 @@ namespace TestyLRNS_WPF.Services
             transaction.Commit();
         }
 
-        // Metody pro bezpečné zpracování NULL hodnot z JSONu od Supabase
         private object GetStringOrNull(JsonElement el, string prop) => el.TryGetProperty(prop, out var val) && val.ValueKind != JsonValueKind.Null ? val.GetString()! : DBNull.Value;
         private object GetIntOrNull(JsonElement el, string prop) => el.TryGetProperty(prop, out var val) && val.ValueKind != JsonValueKind.Null ? val.GetInt32() : DBNull.Value;
         private object GetDateTimeOrNull(JsonElement el, string prop) => el.TryGetProperty(prop, out var val) && val.ValueKind != JsonValueKind.Null ? val.GetDateTime() : DBNull.Value;
@@ -349,6 +429,7 @@ namespace TestyLRNS_WPF.Services
         {
             if (File.Exists(_lastSyncFilePath) && DateTime.TryParse(File.ReadAllText(_lastSyncFilePath), out DateTime time))
                 return time;
+
             return DateTime.MinValue; // Nikdy nesynchronizováno -> Stáhne vše
         }
 

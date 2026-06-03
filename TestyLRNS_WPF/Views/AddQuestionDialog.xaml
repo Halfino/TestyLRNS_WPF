@@ -1,7 +1,7 @@
 ﻿<Window x:Class="TestyLRNS_WPF.Views.AddQuestionDialog"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        xmlns:d="http://schemas.expression/blend/2008"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:ui="http://schemas.modernwpf.com/2019"
         mc:Ignorable="d"
@@ -29,34 +29,21 @@
                             </Grid.ColumnDefinitions>
 
                             <Grid Width="20" Height="20" VerticalAlignment="Center">
-                                <Ellipse x:Name="OuterCircle" 
-                                         Stroke="#B0B0B0" 
-                                         StrokeThickness="2" 
-                                         Fill="#252525"/>
-
-                                <Ellipse x:Name="CheckDot" 
-                                         Width="10" 
-                                         Height="10" 
-                                         Fill="#4DA6FF" 
-                                         Visibility="Collapsed"/>
+                                <Ellipse x:Name="OuterCircle" Stroke="#B0B0B0" StrokeThickness="2" Fill="#252525"/>
+                                <Ellipse x:Name="CheckDot" Width="10" Height="10" Fill="#4DA6FF" Visibility="Collapsed"/>
                             </Grid>
 
-                            <ContentPresenter Grid.Column="1" 
-                                              Margin="12,0,0,0" 
-                                              VerticalAlignment="Center" 
-                                              HorizontalAlignment="Left"/>
+                            <ContentPresenter Grid.Column="1" Margin="12,0,0,0" VerticalAlignment="Center" HorizontalAlignment="Left"/>
                         </Grid>
 
                         <ControlTemplate.Triggers>
                             <Trigger Property="IsMouseOver" Value="True">
                                 <Setter TargetName="OuterCircle" Property="Stroke" Value="White"/>
                             </Trigger>
-
                             <Trigger Property="IsChecked" Value="True">
                                 <Setter TargetName="OuterCircle" Property="Stroke" Value="#4DA6FF"/>
                                 <Setter TargetName="CheckDot" Property="Visibility" Value="Visible"/>
                             </Trigger>
-
                             <Trigger Property="IsEnabled" Value="False">
                                 <Setter TargetName="OuterCircle" Property="Stroke" Value="#555555"/>
                                 <Setter Property="Foreground" Value="#777777"/>
@@ -180,6 +167,17 @@
                     <RadioButton x:Name="Rb3" GroupName="CorrectAnswer"/>
                     <TextBox x:Name="TxtAns3" Grid.Column="1" ui:ControlHelper.PlaceholderText="Odpověď C" Margin="10,0,0,0"/>
                 </Grid>
+            </StackPanel>
+
+            <StackPanel x:Name="PanelImageUpload" Visibility="Collapsed" Margin="0,15,0,0">
+                <TextBlock Text="Příloha k otevřené otázce (Schéma)" Foreground="LightGray" Margin="0,0,0,4"/>
+                <StackPanel Orientation="Horizontal">
+                    <Button Content="Vybrat obrázek..." Click="BtnSelectImage_Click" Background="#2D2D2D" Foreground="White"/>
+                    <TextBlock x:Name="TxtImageName" Text="Žádný obrázek" Foreground="Gray" VerticalAlignment="Center" Margin="10,0,0,0"/>
+                    <Button x:Name="BtnRemoveImage" Click="BtnRemoveImage_Click" Background="Transparent" Visibility="Collapsed" Margin="5,0,0,0" Padding="5">
+                        <ui:FontIcon Glyph="&#xE74D;" Foreground="#FF4444" FontSize="14"/>
+                    </Button>
+                </StackPanel>
             </StackPanel>
 
             <TextBlock x:Name="TxtErrorMessage" Foreground="#FF5555" FontWeight="SemiBold" Visibility="Collapsed" TextWrapping="Wrap" Margin="0,15,0,0"/>

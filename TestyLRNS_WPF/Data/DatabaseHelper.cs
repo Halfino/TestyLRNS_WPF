@@ -150,6 +150,16 @@ namespace TestyLRNS_WPF.Data
                 );";
 
             command.ExecuteNonQuery();
+
+            try
+            {
+                command.CommandText = "ALTER TABLE Questions ADD COLUMN image_path TEXT;";
+                command.ExecuteNonQuery();
+            }
+            catch (SqliteException)
+            {
+                // Ignorujeme - sloupec už existuje
+            }
         }
 
         private static void SeedDefaultData()
@@ -158,7 +168,7 @@ namespace TestyLRNS_WPF.Data
 
             // 1. Seed Systémů s PEVNÝMI (statickými) GUID
             using var checkSystemsCmd = new SqliteCommand("SELECT COUNT(*) FROM SystemTopics", connection);
-            if ((long)checkSystemsCmd.ExecuteScalar() == 0)
+            if (Convert.ToInt64(checkSystemsCmd.ExecuteScalar()) == 0)
             {
                 var topics = new (string Gid, string Name, string Unit)[] {
                     ("11111111-0000-0000-0000-000000000001", "PAPI", "SZP"),
@@ -191,7 +201,7 @@ namespace TestyLRNS_WPF.Data
 
             // 2. Seed Uživatelů s PEVNÝMI (statickými) GUID
             using var checkUsersCmd = new SqliteCommand("SELECT COUNT(*) FROM Users", connection);
-            if ((long)checkUsersCmd.ExecuteScalar() == 0)
+            if (Convert.ToInt64(checkUsersCmd.ExecuteScalar()) == 0)
             {
                 string defaultPassword = Services.SecurityService.HashPassword("123");
 

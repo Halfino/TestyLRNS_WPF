@@ -1,6 +1,7 @@
 ﻿using QuestPDF.Fluent;
 using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
+using SkiaSharp;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -50,18 +51,15 @@ namespace TestyLRNS_WPF.Services
 
                     var baseInfo = GetBaseInfo(person.AirportIcao);
 
-                    // HORNÍ ČÁST (Vycentrovaná základna)
                     page.Header().Column(h =>
                     {
                         h.Item().AlignCenter().Text(baseInfo.Name).Bold().FontSize(14);
                         h.Item().AlignCenter().Text(baseInfo.Details).FontSize(10);
                     });
 
-                    // PROSTŘEDNÍ ČÁST (Plně vertikálně a horizontálně vycentrovaná)
                     page.Content().AlignMiddle().Column(c =>
                     {
                         string formattedType = GetFormattedTestType(testResult.TestType, questions);
-                        // Zde je text typu testu (např. vč. odřádkování) vycentrovaný
                         c.Item().AlignCenter().Text(formattedType).ExtraBold().FontSize(22).AlignCenter();
                         c.Item().PaddingTop(40);
 
@@ -70,21 +68,17 @@ namespace TestyLRNS_WPF.Services
                         string fullMilitaryName = $"{rankPart}{titlePart}{person.LastName} {person.FirstName}".Trim();
 
                         c.Item().AlignCenter().Text($"Testovaný: {fullMilitaryName}").Bold().FontSize(18);
-                        // Zde používáme správný převodník třídy přímo z modelu Person!
                         c.Item().AlignCenter().PaddingTop(8).Text($"Odbornost: {person.Unit ?? "Všeobecná"}  |  Třída: {person.KnowledgeClassText}").FontSize(14);
                     });
 
-                    // SPODNÍ ČÁST (Rozdělení na levou a pravou část pomocí Row)
                     page.Footer().Row(row =>
                     {
-                        // LEVÁ STRANA: Zadavatel (Zarovnáno dolů)
                         row.RelativeItem().AlignBottom().AlignLeft().Column(l =>
                         {
                             l.Item().Text("Test vytvořil:").FontSize(9).FontColor(Colors.Grey.Medium);
                             l.Item().Text(creatorFullName).FontSize(10).Bold();
                         });
 
-                        // PRAVÁ STRANA: Původní podpisy (Pevná šířka 260)
                         row.ConstantItem(260).AlignRight().Column(f =>
                         {
                             f.Item().Text("Mez úspěšnosti: 80 %").Bold();
@@ -102,7 +96,7 @@ namespace TestyLRNS_WPF.Services
                 container.Page(page =>
                 {
                     page.Size(PageSizes.A4);
-                    page.Content().Text(" "); // Pro QuestPDF zde musí být alespoň "mezera", aby stranu vykreslil
+                    page.Content().Text(" ");
                 });
 
                 // ======================================================
@@ -114,7 +108,6 @@ namespace TestyLRNS_WPF.Services
                     page.Margin(2, Unit.Centimetre);
                     page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
 
-                    // Decentní navigace na každé stránce testu
                     page.Header().Text($"Zkušební test  |  {person.LastName} {person.FirstName}").FontSize(9).FontColor(Colors.Grey.Medium);
 
                     page.Content().PaddingTop(15).Column(col =>
@@ -126,7 +119,54 @@ namespace TestyLRNS_WPF.Services
                 });
 
                 // ======================================================
-                // KLÍČ SPRÁVNÝCH ODPOVĚDÍ (Na nové straně)
+                // PŘÍLOHY (Samostatné stránky pro obrázky/schémata) - PŘESUNUTO PŘED KLÍČ
+                // ======================================================
+                var questionsWithImages = processedQuestions.Where(q => !string.IsNullOrEmpty(q.Question.ImagePath)).ToList();
+                if (questionsWithImages.Any())
+                {
+                    foreach (var q in questionsWithImages)
+                    {
+                        string imgPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images", q.Question.ImagePath!);
+                        if (File.Exists(imgPath))
+                        {
+                            // Detekce orientace obrázku pomocí SkiaSharp
+                            bool isLandscape = false;
+                            try
+                            {
+                                using (var stream = File.OpenRead(imgPath))
+                                using (var bitmap = SKBitmap.Decode(stream))
+                                {
+                                    if (bitmap != null)
+                                    {
+                                        isLandscape = bitmap.Width > bitmap.Height;
+                                    }
+                                }
+                            }
+                            catch { /* V případě chyby čtení zůstane výchozí portrét */ }
+
+                            container.Page(page =>
+                            {
+                                // Pokud je obrázek širší než vyšší, otočíme stránku na šířku (Landscape)
+                                page.Size(isLandscape ? PageSizes.A4.Landscape() : PageSizes.A4);
+                                page.Margin(2, Unit.Centimetre);
+                                page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
+
+                                page.Header().Text($"Příloha k testu  |  {person.LastName} {person.FirstName}").FontSize(9).FontColor(Colors.Grey.Medium);
+
+                                page.Content().PaddingTop(15).Column(col =>
+                                {
+                                    col.Item().PaddingBottom(15).Text($"Schéma k otázce č. {q.Number}:").Bold().FontSize(14);
+                                    col.Item().Image(imgPath).FitArea();
+                                });
+
+                                page.Footer().AlignCenter().Text(x => { x.Span("Strana "); x.CurrentPageNumber(); });
+                            });
+                        }
+                    }
+                }
+
+                // ======================================================
+                // KLÍČ SPRÁVNÝCH ODPOVĚDÍ (Až na úplném konci dokumentu)
                 // ======================================================
                 container.Page(page =>
                 {
@@ -143,6 +183,7 @@ namespace TestyLRNS_WPF.Services
 
                     page.Footer().AlignCenter().Text(x => { x.Span("Strana "); x.CurrentPageNumber(); });
                 });
+
             })
             .GeneratePdf(outputPath);
         }
@@ -153,10 +194,18 @@ namespace TestyLRNS_WPF.Services
         {
             foreach (var q in questions)
             {
-                col.Item().PaddingBottom(15).Column(qCol =>
+                // .ShowEntire() ZAŘÍDÍ, ŽE OTÁZKA S ODPOVĚĎMI ZŮSTANE VŽDY POHROMADĚ NA JEDNÉ STRÁNCE
+                col.Item().ShowEntire().PaddingBottom(15).Column(qCol =>
                 {
                     // Text otázky
                     qCol.Item().Text($"{q.Number}. {q.Question.Text}").Bold();
+
+                    // Pokud je u otázky nahrané schéma, informujeme o tom testovaného
+                    if (!string.IsNullOrEmpty(q.Question.ImagePath))
+                    {
+                        qCol.Item().PaddingTop(2).Text("(K této otázce je připojeno schéma v přílohách na konci testu)")
+                            .FontSize(10).FontColor(Colors.Grey.Medium).Italic();
+                    }
 
                     // Pokud má otázka definované odpovědi (Uzavřená otázka)
                     if (q.ShuffledAnswers != null && q.ShuffledAnswers.Any())
@@ -181,7 +230,6 @@ namespace TestyLRNS_WPF.Services
         private void ComposeAnswerKey(ColumnDescriptor col, List<ProcessedQuestion> questions)
         {
             col.Item().PaddingBottom(20).Text("Klíč správných odpovědí").Bold().FontSize(16);
-
             col.Item().Table(table =>
             {
                 table.ColumnsDefinition(columns =>
@@ -208,31 +256,25 @@ namespace TestyLRNS_WPF.Services
 
         // --- POMOCNÉ TŘÍDY A LOGIKA ---
 
-        // Převede systémový název testu na ten armádní vycentrovaný formát
         private string GetFormattedTestType(string? rawType, List<Question> questions)
         {
             if (string.IsNullOrEmpty(rawType)) return "ZKUŠEBNÍ TEST";
 
             if (rawType.Contains("Průřezový"))
                 return "Průřezový test";
-
             if (rawType.Contains("Teorie"))
                 return "Typový výcvik - postupový test\nTeorie";
-
             if (rawType.Contains("Provozní"))
                 return "Typový výcvik - postupový test\nProvozní výcvik";
-
             if (rawType.Contains("Závěrečný"))
                 return "Typový výcvik\nZávěrečný test";
 
             if (rawType.Contains("Průběžný"))
             {
-                // Pokusí se najít téma z otázek
                 var topics = questions.Where(q => !string.IsNullOrEmpty(q.SystemTopic))
                                       .Select(q => q.SystemTopic)
                                       .Distinct()
                                       .ToList();
-
                 string topicStr = topics.Count == 1 ? topics.First()! : "";
                 return $"Průběžný test\nTéma: {topicStr}";
             }
@@ -252,12 +294,11 @@ namespace TestyLRNS_WPF.Services
             };
         }
 
-        // --- EXPORT A OTEVÍRÁNÍ (Zůstává beze změny) ---
+        // --- EXPORT A OTEVÍRÁNÍ ---
 
         public string GetExportFilePath(Person person, string testType, out string directoryPath)
         {
             string rootPath = AppContext.BaseDirectory;
-
             string odbornost = SanitizeForPath(person.Unit ?? "Vseobecna");
             string rok = DateTime.Now.ToString("yyyy");
             string mesic = DateTime.Now.ToString("MM");
@@ -276,7 +317,6 @@ namespace TestyLRNS_WPF.Services
         private string SanitizeForPath(string text)
         {
             if (string.IsNullOrWhiteSpace(text)) return "nezname";
-
             string normalized = text.Normalize(System.Text.NormalizationForm.FormD);
             var sb = new System.Text.StringBuilder();
 

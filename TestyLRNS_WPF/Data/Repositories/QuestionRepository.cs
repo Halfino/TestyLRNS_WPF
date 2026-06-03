@@ -13,9 +13,8 @@ namespace TestyLRNS_WPF.Data.Repositories
             var questions = new List<Question>();
             using var connection = DatabaseHelper.GetConnection();
 
-            // PŘIDÁNO: global_id, sync_status, updated_at
-            string query = "SELECT id, global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active FROM Questions WHERE is_active = 1";
-
+            // PŘIDÁNO: image_path na konec
+            string query = "SELECT id, global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path FROM Questions WHERE is_active = 1";
             if (!string.IsNullOrEmpty(unit)) query += " AND unit = @unit";
             if (!string.IsNullOrEmpty(airportIcao)) query += " AND (airport_icao IS NULL OR airport_icao = @icao)";
             if (!string.IsNullOrEmpty(systemTopic)) query += " AND system_topic = @topic";
@@ -31,9 +30,9 @@ namespace TestyLRNS_WPF.Data.Repositories
                 var question = new Question
                 {
                     Id = reader.GetInt32(0),
-                    GlobalId = reader.GetString(1),          // Načtení GlobalId
-                    SyncStatus = reader.GetInt32(2),         // Načtení SyncStatus
-                    UpdatedAt = reader.GetDateTime(3),       // Načtení UpdatedAt
+                    GlobalId = reader.GetString(1),
+                    SyncStatus = reader.GetInt32(2),
+                    UpdatedAt = reader.GetDateTime(3),
                     Text = reader.GetString(4),
                     IsWritten = reader.GetBoolean(5),
                     KnowledgeClass = reader.GetInt32(6),
@@ -41,7 +40,8 @@ namespace TestyLRNS_WPF.Data.Repositories
                     SystemTopic = reader.IsDBNull(8) ? null : reader.GetString(8),
                     AirportIcao = reader.IsDBNull(9) ? null : reader.GetString(9),
                     IsOperationalTraining = reader.GetBoolean(10),
-                    IsActive = reader.GetBoolean(11)
+                    IsActive = reader.GetBoolean(11),
+                    ImagePath = reader.IsDBNull(12) ? null : reader.GetString(12) // PŘIDÁNO
                 };
                 questions.Add(question);
             }
@@ -58,10 +58,8 @@ namespace TestyLRNS_WPF.Data.Repositories
         public Question? GetById(int id)
         {
             using var connection = DatabaseHelper.GetConnection();
-
-            // PŘIDÁNO: global_id, sync_status, updated_at
-            string query = "SELECT id, global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active FROM Questions WHERE id = @id AND is_active = 1;";
-
+            // PŘIDÁNO: image_path
+            string query = "SELECT id, global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path FROM Questions WHERE id = @id AND is_active = 1;";
             using var command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@id", id);
 
@@ -81,9 +79,9 @@ namespace TestyLRNS_WPF.Data.Repositories
                     SystemTopic = reader.IsDBNull(8) ? null : reader.GetString(8),
                     AirportIcao = reader.IsDBNull(9) ? null : reader.GetString(9),
                     IsOperationalTraining = reader.GetBoolean(10),
-                    IsActive = reader.GetBoolean(11)
+                    IsActive = reader.GetBoolean(11),
+                    ImagePath = reader.IsDBNull(12) ? null : reader.GetString(12) // PŘIDÁNO
                 };
-
                 q.Answers = new ObservableCollection<Answer>(GetActiveAnswersForQuestion(q.Id, connection));
                 q.AnswerCount = q.Answers.Count;
                 return q;
@@ -93,14 +91,12 @@ namespace TestyLRNS_WPF.Data.Repositories
 
         public void Add(Question question)
         {
-            // Zajištění vygenerování GUID pro cloud
             if (string.IsNullOrEmpty(question.GlobalId)) question.GlobalId = Guid.NewGuid().ToString();
-
             using var connection = DatabaseHelper.GetConnection();
 
-            // INSERT obsahuje nově global_id, sync_status (vždy 0 jako neodesláno) a updated_at
-            string qQuery = @"INSERT INTO Questions (global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active) 
-                              VALUES (@globalId, 0, CURRENT_TIMESTAMP, @text, @written, @class, @unit, @topic, @icao, @isOp, 1);
+            // PŘIDÁNO: image_path do INSERT a parametrů
+            string qQuery = @"INSERT INTO Questions (global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path) 
+                              VALUES (@globalId, 0, CURRENT_TIMESTAMP, @text, @written, @class, @unit, @topic, @icao, @isOp, 1, @imgPath);
                               SELECT last_insert_rowid();";
 
             using var qCmd = new SqliteCommand(qQuery, connection);
@@ -112,16 +108,15 @@ namespace TestyLRNS_WPF.Data.Repositories
             qCmd.Parameters.AddWithValue("@topic", (object?)question.SystemTopic ?? DBNull.Value);
             qCmd.Parameters.AddWithValue("@icao", (object?)question.AirportIcao ?? DBNull.Value);
             qCmd.Parameters.AddWithValue("@isOp", question.IsOperationalTraining);
+            qCmd.Parameters.AddWithValue("@imgPath", (object?)question.ImagePath ?? DBNull.Value); // PŘIDÁNO
 
             int newQuestionId = Convert.ToInt32(qCmd.ExecuteScalar());
 
-            // Zápis odpovědí
             if (!question.IsWritten && question.Answers != null)
             {
                 foreach (var ans in question.Answers)
                 {
                     if (string.IsNullOrEmpty(ans.GlobalId)) ans.GlobalId = Guid.NewGuid().ToString();
-
                     string aQuery = "INSERT INTO Answers (global_id, sync_status, updated_at, question_id, text, is_correct, is_active) VALUES (@globalId, 0, CURRENT_TIMESTAMP, @qid, @text, @correct, 1);";
                     using var aCmd = new SqliteCommand(aQuery, connection);
                     aCmd.Parameters.AddWithValue("@globalId", ans.GlobalId);
@@ -137,10 +132,10 @@ namespace TestyLRNS_WPF.Data.Repositories
         {
             using var connection = DatabaseHelper.GetConnection();
 
-            // Zajištění, že se úprava označí jako neodeslaná (sync_status = 0)
+            // PŘIDÁNO: image_path do UPDATE a parametrů
             string qQuery = @"UPDATE Questions 
                               SET text = @text, written = @written, knowledge_class = @class, 
-                                  unit = @unit, system_topic = @topic, airport_icao = @icao, is_operational_training = @isOp,
+                                  unit = @unit, system_topic = @topic, airport_icao = @icao, is_operational_training = @isOp, image_path = @imgPath,
                                   sync_status = 0, updated_at = CURRENT_TIMESTAMP
                               WHERE id = @id;";
 
@@ -153,9 +148,9 @@ namespace TestyLRNS_WPF.Data.Repositories
             qCmd.Parameters.AddWithValue("@topic", (object?)question.SystemTopic ?? DBNull.Value);
             qCmd.Parameters.AddWithValue("@icao", (object?)question.AirportIcao ?? DBNull.Value);
             qCmd.Parameters.AddWithValue("@isOp", question.IsOperationalTraining);
+            qCmd.Parameters.AddWithValue("@imgPath", (object?)question.ImagePath ?? DBNull.Value); // PŘIDÁNO
             qCmd.ExecuteNonQuery();
 
-            // NAHRAZEN TVRDÝ DELETE SOFT-DELETEM
             string deleteAnsQuery = "UPDATE Answers SET is_active = 0, sync_status = 0, updated_at = CURRENT_TIMESTAMP WHERE question_id = @qid;";
             using var delCmd = new SqliteCommand(deleteAnsQuery, connection);
             delCmd.Parameters.AddWithValue("@qid", question.Id);
@@ -166,7 +161,6 @@ namespace TestyLRNS_WPF.Data.Repositories
                 foreach (var ans in question.Answers)
                 {
                     if (string.IsNullOrEmpty(ans.GlobalId)) ans.GlobalId = Guid.NewGuid().ToString();
-
                     string aQuery = "INSERT INTO Answers (global_id, sync_status, updated_at, question_id, text, is_correct, is_active) VALUES (@globalId, 0, CURRENT_TIMESTAMP, @qid, @text, @correct, 1);";
                     using var aCmd = new SqliteCommand(aQuery, connection);
                     aCmd.Parameters.AddWithValue("@globalId", ans.GlobalId);
@@ -181,8 +175,6 @@ namespace TestyLRNS_WPF.Data.Repositories
         private List<Answer> GetActiveAnswersForQuestion(int questionId, SqliteConnection connection)
         {
             var answers = new List<Answer>();
-
-            // PŘIDÁNO: global_id, sync_status, updated_at
             using var command = new SqliteCommand("SELECT id, global_id, sync_status, updated_at, question_id, text, is_correct, is_active FROM Answers WHERE question_id = @qid AND is_active = 1;", connection);
             command.Parameters.AddWithValue("@qid", questionId);
 
@@ -207,8 +199,6 @@ namespace TestyLRNS_WPF.Data.Repositories
         public void SoftDelete(int questionId)
         {
             using var connection = DatabaseHelper.GetConnection();
-
-            // Při smazání označíme řádek k odeslání do cloudu (sync_status = 0)
             using var command = new SqliteCommand("UPDATE Questions SET is_active = 0, sync_status = 0, updated_at = CURRENT_TIMESTAMP WHERE id = @id;", connection);
             command.Parameters.AddWithValue("@id", questionId);
             command.ExecuteNonQuery();

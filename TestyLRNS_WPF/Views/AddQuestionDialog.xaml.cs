@@ -1,12 +1,16 @@
-﻿using System;
+﻿using Microsoft.Win32;
+using SkiaSharp;
+using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Drawing;
+using System.IO;
 using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
+using TestyLRNS_WPF.Core;
 using TestyLRNS_WPF.Data.Repositories;
 using TestyLRNS_WPF.Models;
-using TestyLRNS_WPF.Core;
 
 namespace TestyLRNS_WPF.Views
 {
@@ -18,12 +22,15 @@ namespace TestyLRNS_WPF.Views
         private readonly User _currentUser;
         private bool _isInitializing = true;
 
+        private string? _selectedImageTempPath = null;
+        private string? _finalImageFileName = null;
+        private bool _removeExistingImage = false;
+
         public AddQuestionDialog(User? currentUser, Question? questionToEdit = null)
         {
             this.InitializeComponent();
             _topicRepository = new SystemTopicRepository();
 
-            // OŠETŘENÍ NEPŘIHLÁŠENÉHO UŽIVATELE (pro testování bez loginu)
             _currentUser = currentUser ?? new User
             {
                 Role = "SuperAdmin",
@@ -37,7 +44,6 @@ namespace TestyLRNS_WPF.Views
 
             if (_editingQuestion != null)
             {
-                // --- REŽIM EDITACE ---
                 this.Title = "Úprava zkušební otázky";
                 TxtQuestionText.Text = _editingQuestion.Text;
                 CbType.SelectedIndex = _editingQuestion.IsWritten ? 1 : 0;
@@ -63,12 +69,17 @@ namespace TestyLRNS_WPF.Views
                     TxtAns3.Text = _editingQuestion.Answers[2].Text;
                     Rb3.IsChecked = _editingQuestion.Answers[2].IsCorrect;
                 }
+
+                if (_editingQuestion.IsWritten && !string.IsNullOrEmpty(_editingQuestion.ImagePath))
+                {
+                    _finalImageFileName = _editingQuestion.ImagePath;
+                    TxtImageName.Text = _finalImageFileName;
+                    BtnRemoveImage.Visibility = Visibility.Visible;
+                }
             }
             else
             {
-                // --- REŽIM NOVÝ ---
                 CbType.SelectedIndex = 0;
-
                 string defaultUnit = _currentUser.Unit ?? "SZP";
                 SelectUnitInComboBox(defaultUnit);
                 UpdateTopicsDropdown(defaultUnit);
@@ -79,7 +90,6 @@ namespace TestyLRNS_WPF.Views
                 SelectAirportInComboBox(defaultAirport);
             }
 
-            // ŘÍZENÍ PRÁV 
             if (_currentUser.Role == "SuperAdmin" || _currentUser.Role == "LokalniAdmin")
             {
                 CbUnit.IsEnabled = true;
@@ -93,9 +103,11 @@ namespace TestyLRNS_WPF.Views
 
             _isInitializing = false;
 
-            if (PanelAnswers != null)
+            if (PanelAnswers != null && PanelImageUpload != null)
             {
-                PanelAnswers.Visibility = CbType.SelectedIndex == 1 ? Visibility.Collapsed : Visibility.Visible;
+                bool isWritten = CbType.SelectedIndex == 1;
+                PanelAnswers.Visibility = isWritten ? Visibility.Collapsed : Visibility.Visible;
+                PanelImageUpload.Visibility = isWritten ? Visibility.Visible : Visibility.Collapsed;
             }
         }
 
@@ -104,7 +116,6 @@ namespace TestyLRNS_WPF.Views
             CbAirport.Items.Clear();
             CbAirport.Items.Add("Globální (Všechna)");
 
-            // Oprava: U role kontrolujeme jak SuperAdmina, tak LokalnihoAdmina
             if (_currentUser.Role == "SuperAdmin" || _currentUser.Role == "LokalniAdmin")
             {
                 CbAirport.Items.Add("LKKB (Kbely)");
@@ -130,7 +141,6 @@ namespace TestyLRNS_WPF.Views
         private void SelectUnitInComboBox(string? unit)
         {
             if (string.IsNullOrEmpty(unit)) return;
-
             for (int i = 0; i < CbUnit.Items.Count; i++)
             {
                 if ((CbUnit.Items[i] as ComboBoxItem)?.Content.ToString() == unit)
@@ -165,7 +175,6 @@ namespace TestyLRNS_WPF.Views
         private string? GetSelectedAirportIcao()
         {
             if (CbAirport.SelectedIndex <= 0) return null;
-
             string? fullContent = CbAirport.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(fullContent)) return null;
 
@@ -175,12 +184,10 @@ namespace TestyLRNS_WPF.Views
         private void UpdateTopicsDropdown(string? unit)
         {
             if (string.IsNullOrEmpty(unit) || CbTopic == null) return;
-
             var availableSystems = _topicRepository.GetAllActiveByUnit(unit)
                                                    .Select(t => t.Name)
                                                    .ToList();
 
-            // WPF způsob znovunačtení položek v ComboBoxu
             CbTopic.ItemsSource = null;
             CbTopic.ItemsSource = availableSystems;
 
@@ -193,10 +200,7 @@ namespace TestyLRNS_WPF.Views
         private void CbUnit_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isInitializing) return;
-
-            // OPRAVA: Přidáno .OfType<ComboBoxItem>() před FirstOrDefault, aby WPF LINQ pochopil, co hledá
             var selectedItem = e.AddedItems.OfType<ComboBoxItem>().FirstOrDefault();
-
             if (selectedItem != null)
             {
                 string? selectedUnit = selectedItem.Content.ToString();
@@ -206,14 +210,15 @@ namespace TestyLRNS_WPF.Views
 
         private void CbType_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (PanelAnswers == null) return;
-            PanelAnswers.Visibility = CbType.SelectedIndex == 1 ? Visibility.Collapsed : Visibility.Visible;
+            if (PanelAnswers == null || PanelImageUpload == null) return;
+            bool isWritten = CbType.SelectedIndex == 1;
+            PanelAnswers.Visibility = isWritten ? Visibility.Collapsed : Visibility.Visible;
+            PanelImageUpload.Visibility = isWritten ? Visibility.Visible : Visibility.Collapsed;
         }
 
         private void TsOperational_Toggled(object sender, RoutedEventArgs e)
         {
             if (CbClass == null || CbAirport == null) return;
-
             if (TsOperational.IsOn)
             {
                 CbClass.SelectedIndex = 0;
@@ -231,7 +236,31 @@ namespace TestyLRNS_WPF.Views
             }
         }
 
-        // TLAČÍTKO: ULOŽIT (S chytrou validací do červeného pole)
+        private void BtnSelectImage_Click(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog
+            {
+                Filter = "Obrázky (*.png;*.jpg;*.jpeg;*.webp)|*.png;*.jpg;*.jpeg;*.webp"
+            };
+
+            if (openFileDialog.ShowDialog() == true)
+            {
+                _selectedImageTempPath = openFileDialog.FileName;
+                TxtImageName.Text = Path.GetFileName(_selectedImageTempPath);
+                BtnRemoveImage.Visibility = Visibility.Visible;
+                _removeExistingImage = false;
+            }
+        }
+
+        private void BtnRemoveImage_Click(object sender, RoutedEventArgs e)
+        {
+            _selectedImageTempPath = null;
+            _finalImageFileName = null;
+            _removeExistingImage = true;
+            TxtImageName.Text = "Žádný obrázek";
+            BtnRemoveImage.Visibility = Visibility.Collapsed;
+        }
+
         private void BtnSave_Click(object sender, RoutedEventArgs e)
         {
             TxtErrorMessage.Visibility = Visibility.Collapsed;
@@ -259,12 +288,73 @@ namespace TestyLRNS_WPF.Views
                 return;
             }
 
+            // Zpracování obrázku pomocí SkiaSharp
+            if (_removeExistingImage)
+            {
+                _finalImageFileName = null;
+            }
+            else if (!string.IsNullOrEmpty(_selectedImageTempPath))
+            {
+                try
+                {
+                    string imgDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images");
+                    Directory.CreateDirectory(imgDir);
+
+                    _finalImageFileName = Guid.NewGuid().ToString() + ".webp";
+                    string targetPath = Path.Combine(imgDir, _finalImageFileName);
+
+                    using (var inputStream = File.OpenRead(_selectedImageTempPath))
+                    using (var originalBitmap = SKBitmap.Decode(inputStream))
+                    {
+                        int maxWidth = 1600;
+                        int maxHeight = 2200;
+
+                        SKBitmap bitmapToEncode = originalBitmap;
+                        bool isResized = false;
+
+                        // Výpočet poměru a zmenšení, pokud je to potřeba
+                        if (originalBitmap.Width > maxWidth || originalBitmap.Height > maxHeight)
+                        {
+                            float ratioX = (float)maxWidth / originalBitmap.Width;
+                            float ratioY = (float)maxHeight / originalBitmap.Height;
+                            float ratio = Math.Min(ratioX, ratioY);
+
+                            int newWidth = (int)(originalBitmap.Width * ratio);
+                            int newHeight = (int)(originalBitmap.Height * ratio);
+
+                            bitmapToEncode = originalBitmap.Resize(new SKImageInfo(newWidth, newHeight), new SKSamplingOptions(SKCubicResampler.Mitchell));
+                            isResized = true;
+                        }
+
+                        // Uložení s využitím kvality WEBP 80 (výborný poměr velikosti a kvality pro schémata)
+                        using (var imageToSave = SKImage.FromBitmap(bitmapToEncode))
+                        using (var data = imageToSave.Encode(SKEncodedImageFormat.Webp, 80))
+                        using (var outputStream = File.OpenWrite(targetPath))
+                        {
+                            data.SaveTo(outputStream);
+                        }
+
+                        if (isResized)
+                        {
+                            bitmapToEncode.Dispose();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    TxtErrorMessage.Text = $"Chyba při zpracování obrázku: {ex.Message}";
+                    TxtErrorMessage.Visibility = Visibility.Visible;
+                    return;
+                }
+            }
+
             int dbClass = CbClass.SelectedIndex + 1;
             string? unit = (CbUnit.SelectedItem as ComboBoxItem)?.Content.ToString();
             string? selectedTopic = CbTopic.SelectedItem?.ToString();
             string? airport = GetSelectedAirportIcao();
 
             var questionAnswers = new List<Answer>();
+
             if (!isWritten)
             {
                 questionAnswers.Add(new Answer { Text = TxtAns1.Text.Trim(), IsCorrect = Rb1.IsChecked == true });
@@ -282,6 +372,9 @@ namespace TestyLRNS_WPF.Views
                 _editingQuestion.AirportIcao = airport;
                 _editingQuestion.IsOperationalTraining = TsOperational.IsOn;
                 _editingQuestion.Answers = new ObservableCollection<Answer>(questionAnswers);
+
+                _editingQuestion.ImagePath = isWritten ? _finalImageFileName : null;
+
                 NewQuestion = _editingQuestion;
             }
             else
@@ -296,7 +389,8 @@ namespace TestyLRNS_WPF.Views
                     AirportIcao = airport,
                     IsOperationalTraining = TsOperational.IsOn,
                     Answers = new ObservableCollection<Answer>(questionAnswers),
-                    IsActive = true
+                    IsActive = true,
+                    ImagePath = isWritten ? _finalImageFileName : null
                 };
             }
 
@@ -304,7 +398,6 @@ namespace TestyLRNS_WPF.Views
             this.Close();
         }
 
-        // TLAČÍTKO: ZRUŠIT
         private void BtnCancel_Click(object sender, RoutedEventArgs e)
         {
             this.DialogResult = false;
