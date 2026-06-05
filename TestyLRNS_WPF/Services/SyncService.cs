@@ -279,6 +279,34 @@ namespace TestyLRNS_WPF.Services
         // ==============================================================
         // POMOCNÉ METODY PRO SYNC OBRÁZKŮ (Storage API)
         // ==============================================================
+        public async Task<(double dbMb, double storageMb)> GetCloudStorageStatusAsync()
+        {
+            try
+            {
+                // Zavoláme naši novou SQL funkci v Supabase
+                var response = await _httpClient.PostAsync($"{_supabaseUrl}/rpc/get_cloud_status", null);
+                if (response.IsSuccessStatusCode)
+                {
+                    var jsonString = await response.Content.ReadAsStringAsync();
+
+                    // Rychlé parsování JSONu bez nutnosti složitých tříd
+                    using var doc = System.Text.Json.JsonDocument.Parse(jsonString);
+                    var root = doc.RootElement;
+
+                    long dbBytes = root.GetProperty("db_size_bytes").GetInt64();
+                    long storageBytes = root.GetProperty("bucket_size_bytes").GetInt64();
+
+                    // Převod z Bytů na Megabyty (MB)
+                    double dbMb = Math.Round(dbBytes / 1048576.0, 2);
+                    double storageMb = Math.Round(storageBytes / 1048576.0, 2);
+
+                    return (dbMb, storageMb);
+                }
+            }
+            catch { /* Ignorujeme chyby sítě, prostě vrátíme 0 */ }
+
+            return (0, 0);
+        }
 
         private async Task PushImagesAsync()
         {
