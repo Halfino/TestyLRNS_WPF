@@ -193,7 +193,7 @@ namespace TestyLRNS_WPF.Views
                         selectedPerson, _currentUser, testTypeStr, questionCount,
                         allowedTopics, includeOp, onlyOp);
 
-                    var questionsForPdf = allDbQuestions.Where(q => result.QuestionIds.Contains(q.Id)).ToList();
+                    var questionsForPdf = result.QuestionIds.Select(id => allDbQuestions.First(q => q.Id == id)).ToList();
 
                     lastUsedFile = _pdfService.GetExportFilePath(selectedPerson, testTypeStr, out lastUsedDirectory);
                     result.PdfPath = lastUsedFile;
