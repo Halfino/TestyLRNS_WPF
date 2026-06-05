@@ -15,8 +15,8 @@ namespace TestyLRNS_WPF.Services
         // ==============================================================
         // KLÍČE ZE SUPABASE - ZDE DOPLŇ SVÉ ÚDAJE
         // ==============================================================
-        private readonly string _supabaseUrl = "https://fidxlsyuuddmabicyxwp.supabase.co/rest/v1";
-        private readonly string _anonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZpZHhsc3l1dWRkbWFiaWN5eHdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkyNTI3MjUsImV4cCI6MjA5NDgyODcyNX0.FhReN3yhg8RJH03EeA3H-yzBTOUzo7fzNUmtWd8gvIk";
+        private readonly string _supabaseUrl = "SupabaseApiURI";
+        private readonly string _anonKey = "SupaBaseAnonKey";
 
         private readonly HttpClient _httpClient;
         private readonly string _lastSyncFilePath;
