@@ -4,8 +4,8 @@
         xmlns:ui="http://schemas.modernwpf.com/2019"
         ui:WindowHelper.UseModernWindowStyle="True"
         Title="Testy LRNS - Zkušební systém" 
-        Width="1500" 
-        Height="1080"
+        Width="1280" 
+        Height="720" 
         WindowState="Maximized"
         WindowStartupLocation="CenterScreen"
         Background="#202020"
@@ -59,12 +59,28 @@
             </ui:NavigationView.MenuItems>
 
             <ui:NavigationView.FooterMenuItems>
+                <ui:NavigationViewItem Tag="Help" Content="Nápověda k systému">
+                    <ui:NavigationViewItem.Icon>
+                        <ui:FontIcon Glyph="&#xE897;"/>
+                    </ui:NavigationViewItem.Icon>
+                </ui:NavigationViewItem>
+
                 <ui:NavigationViewItem Tag="Logout" Content="Odhlásit se" Foreground="#FF6666">
                     <ui:NavigationViewItem.Icon>
                         <ui:FontIcon Glyph="&#xE7E8;" Foreground="#FF4444"/>
                     </ui:NavigationViewItem.Icon>
                 </ui:NavigationViewItem>
             </ui:NavigationView.FooterMenuItems>
+
+            <!-- PŘIDÁNO: Nenápadný copyright v patičce levého menu -->
+            <ui:NavigationView.PaneFooter>
+                <TextBlock Text="© 2026 prap. Jan Koranda" 
+                           FontSize="10" 
+                           Foreground="#555555" 
+                           HorizontalAlignment="Center" 
+                           Margin="0,5,0,10"
+                           ToolTip="Autor aplikace"/>
+            </ui:NavigationView.PaneFooter>
 
             <Grid>
                 <Frame x:Name="ContentFrame" NavigationUIVisibility="Hidden" />

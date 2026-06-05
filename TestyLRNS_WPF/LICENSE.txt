@@ -1,0 +1,42 @@
+﻿LICENČNÍ UJEDNÁNÍ S KONCOVÝM UŽIVATELEM (EULA)
+
+Název softwaru: Zkušební systém Testy LRNS (Generátor testů pro LRNS v AČR)
+Autor: prap. Jan KORANDA
+Kontakt: jan.koranda@mo.gov.cz / jan.k.koranda@gmail.com
+Verze: 1.0.0
+
+Copyright © 2026 prap. Jan Koranda. Všechna práva vyhrazena.
+
+PŘED POUŽITÍM TOHOTO SOFTWARU SI PROSÍM PEČLIVĚ PŘEČTĚTE TUTO LICENČNÍ SMLOUVU. SPUŠTĚNÍM A POUŽÍVÁNÍM SOFTWARU VYJADŘUJETE SOUHLAS S TĚMITO PODMÍNKAMI.
+
+1. UDĚLENÍ LICENCE A ZPŮSOB DISTRIBUCE
+Autor tímto poskytuje České republice – Ministerstvu obrany (respektive Armádě České republiky, dále jen „nabyvatel“) a příslušníkům LRNS bezúplatnou, nevýhradní, teritoriálně neomezenou licenci k užívání tohoto softwaru. Licence se uděluje na dobu neurčitou. 
+Software je poskytován jako neinstalovaná (tzv. portable) aplikace. Redistribuce a nasazení na koncové stanice v rámci resortu (nebo na osobní PC příslušníků) probíhá prostým kopírováním aplikační složky.
+
+2. ROZSAH A ÚČEL UŽITÍ
+Software je určen výhradně pro interní potřeby, personální administrativu a vzdělávací účely v rámci resortu Ministerstva obrany ČR a AČR (zejména pro potřeby přezkušování příslušníků Letecké radionavigační služby).
+Aplikace je určena k běhu na pracovních stanicích v prostředí IMO2, případně následujících informačních systémů Ministerstva obrany s přístupem do sítě internet. 
+Pro účely samostudia a přípravy na přezkoušení je plně povoleno užívání softwaru i na soukromých (osobních) zařízeních příslušníků LRNS mimo informační systémy AČR.
+Je však přísně zakázáno spouštět, nasazovat či jinak provozovat tento software v sítích a na zařízeních, kde by mohl jakýmkoliv způsobem ovlivnit, narušit nebo ohrozit provozní systémy LRNS.
+
+3. ARCHITEKTURA A ZPRACOVÁNÍ DAT
+* Offline-first přístup: Software je primárně navržen pro běh bez nutnosti neustálého připojení k síti internet. Veškerá aplikační data (otázky, uživatelé, výsledky testů) jsou primárně ukládána do lokální databáze (SQLite) umístěné přímo ve složce aplikace na daném koncovém zařízení.
+* Napojení na Supabase API: Za účelem sdílení dat mezi vícero koncovými stanicemi software využívá komunikaci přes REST API se službou třetí strany (Supabase). K synchronizaci dochází pouze za předpokladu dostupného připojení k internetu (v síti IMO2 či na osobním PC) a povolené síťové komunikace při spuštění a ukončení aplikace.
+* Datová omezení cloudu: Cloudové úložiště je limitováno parametry poskytovatele služby. Maximální alokovaná velikost pro relační databázi činí 500 MB. Maximální velikost pro ukládání obrazových příloh (schémat) činí 1 GB. Při dosažení těchto kapacitních limitů bude cloudová synchronizace pozastavena a data budou nadále ukládána výhradně lokálně na koncových stanicích. Případné navýšení těchto cloudových limitů je věcí vzájemné domluvy mezi vývojářem a AČR.
+* Uchovávání a archivace dat: Veškerá data shromažďovaná a generovaná aplikací (včetně výsledků přezkoušení a záznamů) budou uchovávána po předepsanou archivační dobu platnou pro výcvikovou dokumentaci LRNS.
+
+4. OMEZENÍ A ZÁKAZY
+* Zákaz distribuce mimo LRNS AČR: Software je striktně a výhradně určen pouze pro příslušníky Letecké radionavigační služby (LRNS) AČR. Je přísně zakázáno poskytovat, kopírovat, sdílet či jakkoliv distribuovat tento software (včetně jeho zdrojových kódů a databází) osobám, civilním subjektům či jiným institucím mimo tuto organizační složku.
+* Zákaz komerčního využití: Nabyvatel ani koncoví uživatelé nesmí software prodávat, pronajímat, distribuovat za úplatu nebo jej využívat k jakýmkoli komerčním účelům.
+* Zákaz úprav: Bez předchozího písemného souhlasu autora je zakázáno software modifikovat, dekompilovat, provádět reverzní inženýrství nebo zasahovat do zdrojového kódu.
+* Ochrana přístupových klíčů: Je přísně zakázáno extrahovat, zneužívat či jinak manipulovat s přístupovými klíči (API keys) k databázi Supabase, které jsou v softwaru implementovány. Tyto klíče slouží výhradně pro vnitřní komunikaci této konkrétní aplikace.
+* Zachování autorství: Všechna označení autora, copyrightu a licenční soubory musí zůstat v softwaru zachovány v původní podobě.
+
+5. VYLOUČENÍ ODPOVĚDNOSTI (DISCLAIMER)
+Tento software je poskytován „TAK, JAK JE“ (as is), bez jakýchkoli záruk za bezchybnou funkčnost nebo vhodnost pro konkrétní účel. Autor nenese odpovědnost za:
+* Jakékoli přímé, nepřímé, náhodné nebo následné škody vzniklé používáním tohoto softwaru (včetně ztráty dat nebo narušení bezpečnosti koncových stanic). Vzhledem k výslovnému zákazu provozu v sítích LRNS (viz bod 2) autor striktně odmítá jakoukoliv odpovědnost za případné ovlivnění či nefunkčnost těchto provozních systémů při porušení tohoto zákazu ze strany nabyvatele či koncového uživatele.
+* Dostupnost, stabilitu a integritu dat uložených v cloudové databázi (Supabase). Odpovědnost za pravidelné lokální zálohování aplikační složky nese koncový uživatel / správce systému na dané základně.
+* Výpadky synchronizace způsobené nedostupností sítě, restrikcemi na úrovni firewallu AČR (např. v prostředí IMO2) nebo výpadky API poskytovatele cloudových služeb.
+
+6. UKONČENÍ LICENCE
+Tato licence je platná do doby, než bude ukončena dohodou stran, nebo dokud autor licenci písemně nevypoví z důvodu porušení podmínek této smlouvy ze strany nabyvatele či koncových uživatelů. Při ukončení licence je uživatel povinen přestat software užívat a odstranit všechny jeho kopie.

@@ -59,6 +59,7 @@ namespace TestyLRNS_WPF
                         return;
                     }
 
+                    // Tlačítko "Help" se teď chová jako běžná stránka
                     NavigateTo(tag);
                 }
             }
@@ -89,7 +90,6 @@ namespace TestyLRNS_WPF
 
         private void NavigateTo(string pageTag)
         {
-            // Přepínání stránek ve WPF
             if (pageTag == "Dashboard")
             {
                 ContentFrame.Navigate(new Views.DashboardPage());
@@ -109,6 +109,10 @@ namespace TestyLRNS_WPF
             else if (pageTag == "History")
             {
                 ContentFrame.Navigate(new Views.TestHistoryPage());
+            }
+            else if (pageTag == "Help") // PŘIDÁNO: Zobrazení nové stránky s nápovědou
+            {
+                ContentFrame.Navigate(new Views.HelpPage());
             }
             else if (pageTag == "Settings")
             {
