@@ -19,7 +19,7 @@ namespace TestyLRNS_WPF.Data.Repositories
         public int TestId { get; set; }
         public string PersonName { get; set; } = string.Empty;
         public string TestType { get; set; } = string.Empty;
-        public string Unit { get; set; } = string.Empty; // PŘIDÁNO: Pro zobrazení odbornosti
+        public string Unit { get; set; } = string.Empty;
         public DateTime DateGenerated { get; set; }
         public string DateGeneratedString => DateGenerated.ToString("dd.MM.yyyy");
 
@@ -27,6 +27,10 @@ namespace TestyLRNS_WPF.Data.Repositories
         public int? Score { get; set; }
         public int MaxScore { get; set; }
         public string PdfPath { get; set; } = string.Empty;
+
+        // PŘIDÁNO: Podpora pro poznámku
+        public string? Note { get; set; }
+        public bool HasNote => !string.IsNullOrWhiteSpace(Note);
 
         public string DisplayScore => Score.HasValue ? $"{Score.Value} / {MaxScore}" : $"-- / {MaxScore}";
         public string DisplayPercentage => Score.HasValue ? $"{Math.Round(((double)Score.Value / MaxScore) * 100)} %" : "-- %";
@@ -38,7 +42,6 @@ namespace TestyLRNS_WPF.Data.Repositories
     {
         public void SaveTestResult(TestResult testResult)
         {
-            // Vygenerujeme GUID pro test, pokud ho ještě nemá
             if (string.IsNullOrEmpty(testResult.GlobalId)) testResult.GlobalId = Guid.NewGuid().ToString();
 
             using var connection = DatabaseHelper.GetConnection();
@@ -46,7 +49,6 @@ namespace TestyLRNS_WPF.Data.Repositories
 
             try
             {
-                // PŘIDÁNO: global_id, sync_status, updated_at
                 using var cmdTest = new SqliteCommand(@"
                     INSERT INTO TestResults (global_id, sync_status, updated_at, person_id, date_generated, date_completed, score, max_score, note, generated_by_user_id, random_seed, test_type, pdf_path) 
                     VALUES (@globalId, 0, CURRENT_TIMESTAMP, @personId, @dateGen, @dateComp, @score, @maxScore, @note, @genUserId, @seed, @testType, @pdfPath);
@@ -67,7 +69,6 @@ namespace TestyLRNS_WPF.Data.Repositories
                 long lastId = (long)cmdTest.ExecuteScalar();
                 testResult.Id = (int)lastId;
 
-                // Ukládání vazební tabulky s vlastními GUID
                 foreach (int questionId in testResult.QuestionIds)
                 {
                     string tqGlobalId = Guid.NewGuid().ToString();
@@ -92,7 +93,6 @@ namespace TestyLRNS_WPF.Data.Repositories
             var list = new List<PendingTestDto>();
             using var connection = DatabaseHelper.GetConnection();
 
-            // SQL dotaz pro DTO necháváme beze změny (GlobalID v UI nepotřebujeme)
             string query = @"
                 SELECT t.id, p.rank, p.title_before, p.last_name, p.first_name, t.test_type
                 FROM TestResults t
@@ -120,6 +120,7 @@ namespace TestyLRNS_WPF.Data.Repositories
             {
                 string rank = reader.IsDBNull(1) ? "" : reader.GetString(1) + " ";
                 string title = reader.IsDBNull(2) ? "" : reader.GetString(2) + " ";
+
                 list.Add(new PendingTestDto
                 {
                     TestId = reader.GetInt32(0),
@@ -133,8 +134,6 @@ namespace TestyLRNS_WPF.Data.Repositories
         public TestResult? GetById(int id)
         {
             using var connection = DatabaseHelper.GetConnection();
-
-            // PŘIDÁNO: global_id, sync_status, updated_at
             string query = "SELECT id, global_id, sync_status, updated_at, person_id, date_generated, date_completed, score, max_score, note, pdf_path, generated_by_user_id, random_seed, test_type FROM TestResults WHERE id = @id;";
 
             using var command = new SqliteCommand(query, connection);
@@ -146,9 +145,9 @@ namespace TestyLRNS_WPF.Data.Repositories
                 var tr = new TestResult
                 {
                     Id = reader.GetInt32(0),
-                    GlobalId = reader.GetString(1),          // Načtení GlobalId
-                    SyncStatus = reader.GetInt32(2),         // Načtení SyncStatus
-                    UpdatedAt = reader.GetDateTime(3),       // Načtení UpdatedAt
+                    GlobalId = reader.GetString(1),
+                    SyncStatus = reader.GetInt32(2),
+                    UpdatedAt = reader.GetDateTime(3),
                     PersonId = reader.GetInt32(4),
                     DateGenerated = reader.GetDateTime(5),
                     DateCompleted = reader.IsDBNull(6) ? null : reader.GetDateTime(6),
@@ -163,6 +162,7 @@ namespace TestyLRNS_WPF.Data.Repositories
 
                 using var qCmd = new SqliteCommand("SELECT question_id FROM TestQuestions WHERE test_id = @tid", connection);
                 qCmd.Parameters.AddWithValue("@tid", tr.Id);
+
                 using var qReader = qCmd.ExecuteReader();
                 while (qReader.Read())
                 {
@@ -176,8 +176,6 @@ namespace TestyLRNS_WPF.Data.Repositories
         public void UpdateTestResultScore(int testId, int score, string? note)
         {
             using var connection = DatabaseHelper.GetConnection();
-
-            // PŘIDÁNO: Značka pro synchronizaci sync_status = 0
             string query = "UPDATE TestResults SET score = @score, date_completed = @dateComp, note = @note, sync_status = 0, updated_at = CURRENT_TIMESTAMP WHERE id = @id;";
 
             using var command = new SqliteCommand(query, connection);
@@ -191,8 +189,6 @@ namespace TestyLRNS_WPF.Data.Repositories
         public void UpdatePdfPath(int testId, string pdfPath)
         {
             using var connection = DatabaseHelper.GetConnection();
-
-            // PŘIDÁNO: Značka pro synchronizaci sync_status = 0
             using var command = new SqliteCommand("UPDATE TestResults SET pdf_path = @path, sync_status = 0, updated_at = CURRENT_TIMESTAMP WHERE id = @id;", connection);
 
             command.Parameters.AddWithValue("@id", testId);
@@ -205,9 +201,9 @@ namespace TestyLRNS_WPF.Data.Repositories
             var list = new List<TestHistoryDto>();
             using var connection = DatabaseHelper.GetConnection();
 
-            // SQL dotaz pro DTO necháváme beze změny
+            // PŘIDÁNO: t.note na konec SQL dotazu
             string query = @"
-                SELECT t.id, p.rank, p.title_before, p.last_name, p.first_name, t.test_type, t.date_generated, t.date_completed, t.score, t.max_score, t.pdf_path, p.unit
+                SELECT t.id, p.rank, p.title_before, p.last_name, p.first_name, t.test_type, t.date_generated, t.date_completed, t.score, t.max_score, t.pdf_path, p.unit, t.note
                 FROM TestResults t
                 JOIN Persons p ON t.person_id = p.id
                 WHERE p.is_active = 1";
@@ -251,7 +247,9 @@ namespace TestyLRNS_WPF.Data.Repositories
                     Score = reader.IsDBNull(8) ? null : reader.GetInt32(8),
                     MaxScore = reader.GetInt32(9),
                     PdfPath = reader.IsDBNull(10) ? "" : reader.GetString(10),
-                    Unit = reader.IsDBNull(11) ? "Všeobecná" : reader.GetString(11)
+                    Unit = reader.IsDBNull(11) ? "Všeobecná" : reader.GetString(11),
+                    // PŘIDÁNO: Načtení poznámky z 12. indexu
+                    Note = reader.IsDBNull(12) ? null : reader.GetString(12)
                 });
             }
             return list;

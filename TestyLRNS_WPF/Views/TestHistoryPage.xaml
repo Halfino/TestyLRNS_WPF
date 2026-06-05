@@ -9,6 +9,10 @@
       TextElement.Foreground="White"
       Title="TestHistoryPage">
 
+    <Page.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVis"/>
+    </Page.Resources>
+
     <Grid Margin="20">
         <Grid.RowDefinitions>
             <RowDefinition Height="Auto"/>
@@ -16,7 +20,6 @@
         </Grid.RowDefinitions>
 
         <WrapPanel Grid.Row="0" Margin="0,0,0,20">
-
             <StackPanel Margin="0,0,15,10">
                 <TextBlock Text="Rok přezkoušení" Foreground="LightGray" Margin="0,0,0,4"/>
                 <ComboBox x:Name="CbYear" Width="150" SelectionChanged="Filter_SelectionChanged"/>
@@ -72,10 +75,11 @@
                             <ColumnDefinition Width="1.2*"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="45"/>
+                            <ColumnDefinition Width="80"/>
                         </Grid.ColumnDefinitions>
 
-                        <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Grid.ColumnSpan="7" Margin="-10,0,-10,0" VerticalAlignment="Bottom"/>
+                        <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Grid.ColumnSpan="8" Margin="-10,0,-10,0" VerticalAlignment="Bottom"/>
 
                         <TextBlock Grid.Column="0" Text="Technik" FontWeight="Bold" Foreground="Gray" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="1" Text="Odbornost" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
@@ -83,7 +87,9 @@
                         <TextBlock Grid.Column="3" Text="Datum generování" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="4" Text="Výsledek (Body)" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
                         <TextBlock Grid.Column="5" Text="Hodnocení" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                        <TextBlock Grid.Column="6" Text="Dokument" FontWeight="Bold" Foreground="Gray" Width="80" TextAlignment="Center" VerticalAlignment="Center"/>
+
+                        <TextBlock Grid.Column="6" Text="Pozn." FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                        <TextBlock Grid.Column="7" Text="Dokument" FontWeight="Bold" Foreground="Gray" Width="80" TextAlignment="Center" VerticalAlignment="Center"/>
                     </Grid>
                 </Border>
 
@@ -100,7 +106,8 @@
                                             <ColumnDefinition Width="1.2*"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
-                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="45"/>
+                                            <ColumnDefinition Width="80"/>
                                         </Grid.ColumnDefinitions>
 
                                         <TextBlock Grid.Column="0" Text="{Binding PersonName}" VerticalAlignment="Center" FontWeight="Bold" TextTrimming="CharacterEllipsis"/>
@@ -110,7 +117,17 @@
                                         <TextBlock Grid.Column="4" Text="{Binding DisplayScore}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="SemiBold"/>
                                         <TextBlock Grid.Column="5" Text="{Binding Status}" VerticalAlignment="Center" HorizontalAlignment="Center" FontWeight="ExtraBold" Foreground="{Binding StatusColor}"/>
 
-                                        <Button Grid.Column="6" Click="BtnOpenPdf_Click" Tag="{Binding TestId}" Width="45" Height="32" HorizontalAlignment="Center">
+                                        <Button Grid.Column="6" Width="36" Height="32" HorizontalAlignment="Center" Background="Transparent" BorderThickness="0" Padding="0"
+                                                Visibility="{Binding HasNote, Converter={StaticResource BoolToVis}}">
+                                            <ui:FontIcon Glyph="&#xE8BD;" FontSize="15" Foreground="#FFCC00"/>
+                                            <ui:FlyoutService.Flyout>
+                                                <ui:Flyout>
+                                                    <TextBlock Text="{Binding Note}" TextWrapping="Wrap" MaxWidth="280" FontSize="14" Foreground="White" />
+                                                </ui:Flyout>
+                                            </ui:FlyoutService.Flyout>
+                                        </Button>
+
+                                        <Button Grid.Column="7" Click="BtnOpenPdf_Click" Tag="{Binding TestId}" Width="45" Height="32" HorizontalAlignment="Center">
                                             <ui:FontIcon Glyph="&#xE8A5;" FontSize="14" Foreground="#4DA6FF"/>
                                         </Button>
                                     </Grid>
