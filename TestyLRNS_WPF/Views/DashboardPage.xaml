@@ -12,6 +12,34 @@
     <ScrollViewer VerticalScrollBarVisibility="Auto" Padding="20">
         <StackPanel>
 
+            <Grid Margin="0,0,0,20">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="20"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+
+                <Border Grid.Column="0" Background="#202020" CornerRadius="8" Padding="15">
+                    <StackPanel>
+                        <TextBlock Text="Kapacita Cloudové Databáze (Max 500 MB)" Foreground="Gray" FontSize="12" Margin="0,0,0,5"/>
+                        <Grid>
+                            <ProgressBar x:Name="PbDb" Maximum="500" Value="0" Height="8" Foreground="#4DA6FF"/>
+                        </Grid>
+                        <TextBlock x:Name="TxtDbStatus" Text="Načítám..." Foreground="White" FontWeight="Bold" Margin="0,5,0,0" HorizontalAlignment="Right"/>
+                    </StackPanel>
+                </Border>
+
+                <Border Grid.Column="2" Background="#202020" CornerRadius="8" Padding="15">
+                    <StackPanel>
+                        <TextBlock Text="Kapacita Úložiště Schémat (Max 1000 MB)" Foreground="Gray" FontSize="12" Margin="0,0,0,5"/>
+                        <Grid>
+                            <ProgressBar x:Name="PbStorage" Maximum="1000" Value="0" Height="8" Foreground="#00CC66"/>
+                        </Grid>
+                        <TextBlock x:Name="TxtStorageStatus" Text="Načítám..." Foreground="White" FontWeight="Bold" Margin="0,5,0,0" HorizontalAlignment="Right"/>
+                    </StackPanel>
+                </Border>
+            </Grid>
+
             <Grid>
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*"/>

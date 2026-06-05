@@ -19,7 +19,7 @@ namespace TestyLRNS_WPF.Views
         public DashboardPage()
         {
             this.InitializeComponent();
-
+            LoadCloudStatus();
             _personRepo = new PersonRepository();
             _questionRepo = new QuestionRepository();
             _testResultRepo = new TestResultRepository();
@@ -120,6 +120,32 @@ namespace TestyLRNS_WPF.Views
                 }
                
             }
+        }
+
+        private async void LoadCloudStatus()
+        {
+            // Pokud je PC offline, nebudeme cloud načítat
+            if (!App.IsInternetAvailable())
+            {
+                TxtDbStatus.Text = "Offline";
+                TxtStorageStatus.Text = "Offline";
+                return;
+            }
+
+            var syncService = new Services.SyncService();
+            var status = await syncService.GetCloudStorageStatusAsync();
+
+            // Nastavení hodnot do Progress Barů
+            PbDb.Value = status.dbMb;
+            PbStorage.Value = status.storageMb;
+
+            // Zobrazení textu
+            TxtDbStatus.Text = $"{status.dbMb} MB / 500 MB";
+            TxtStorageStatus.Text = $"{status.storageMb} MB / 1000 MB";
+
+            // Pokud se blížíme k limitu (např. nad 90%), zbarvíme bar do červena
+            if (status.dbMb > 450) PbDb.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 68, 68));
+            if (status.storageMb > 900) PbStorage.Foreground = new System.Windows.Media.SolidColorBrush(System.Windows.Media.Color.FromRgb(255, 68, 68));
         }
     }
 }
