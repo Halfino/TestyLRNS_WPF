@@ -116,7 +116,7 @@ namespace TestyLRNS_WPF.Views
             CbAirport.Items.Clear();
             CbAirport.Items.Add("Globální (Všechna)");
 
-            if (_currentUser.Role == "SuperAdmin" || _currentUser.Role == "LokalniAdmin")
+            if (_currentUser.Role == "SuperAdmin")
             {
                 CbAirport.Items.Add("LKKB (Kbely)");
                 CbAirport.Items.Add("LKCV (Čáslav)");
