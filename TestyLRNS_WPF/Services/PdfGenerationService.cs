@@ -119,7 +119,16 @@ namespace TestyLRNS_WPF.Services
                 });
 
                 // ======================================================
-                // PŘÍLOHY (Samostatné stránky pro obrázky/schémata) - PŘESUNUTO PŘED KLÍČ
+                // ODDĚLOVACÍ STRANA PO TESTU
+                // ======================================================
+                container.Page(page =>
+                {
+                    page.Size(PageSizes.A4);
+                    page.Content().Text(" ");
+                });
+
+                // ======================================================
+                // PŘÍLOHY (Samostatné stránky pro obrázky/schémata)
                 // ======================================================
                 var questionsWithImages = processedQuestions.Where(q => !string.IsNullOrEmpty(q.Question.ImagePath)).ToList();
                 if (questionsWithImages.Any())
@@ -129,7 +138,6 @@ namespace TestyLRNS_WPF.Services
                         string imgPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "Images", q.Question.ImagePath!);
                         if (File.Exists(imgPath))
                         {
-                            // Detekce orientace obrázku pomocí SkiaSharp
                             bool isLandscape = false;
                             try
                             {
@@ -146,7 +154,6 @@ namespace TestyLRNS_WPF.Services
 
                             container.Page(page =>
                             {
-                                // Pokud je obrázek širší než vyšší, otočíme stránku na šířku (Landscape)
                                 page.Size(isLandscape ? PageSizes.A4.Landscape() : PageSizes.A4);
                                 page.Margin(2, Unit.Centimetre);
                                 page.DefaultTextStyle(x => x.FontSize(11).FontFamily("Arial"));
@@ -161,12 +168,21 @@ namespace TestyLRNS_WPF.Services
 
                                 page.Footer().AlignCenter().Text(x => { x.Span("Strana "); x.CurrentPageNumber(); });
                             });
+
+                            // ======================================================
+                            // ODDĚLOVACÍ STRANA PO KAŽDÉM SCHÉMATU
+                            // ======================================================
+                            container.Page(page =>
+                            {
+                                page.Size(PageSizes.A4);
+                                page.Content().Text(" ");
+                            });
                         }
                     }
                 }
 
                 // ======================================================
-                // KLÍČ SPRÁVNÝCH ODPOVĚDÍ (Až na úplném konci dokumentu)
+                // KLÍČ SPRÁVNÝCH ODPOVĚDÍ
                 // ======================================================
                 container.Page(page =>
                 {
@@ -194,20 +210,16 @@ namespace TestyLRNS_WPF.Services
         {
             foreach (var q in questions)
             {
-                // .ShowEntire() ZAŘÍDÍ, ŽE OTÁZKA S ODPOVĚĎMI ZŮSTANE VŽDY POHROMADĚ NA JEDNÉ STRÁNCE
                 col.Item().ShowEntire().PaddingBottom(15).Column(qCol =>
                 {
-                    // Text otázky
                     qCol.Item().Text($"{q.Number}. {q.Question.Text}").Bold();
 
-                    // Pokud je u otázky nahrané schéma, informujeme o tom testovaného
                     if (!string.IsNullOrEmpty(q.Question.ImagePath))
                     {
                         qCol.Item().PaddingTop(2).Text("(K této otázce je připojeno schéma v přílohách na konci testu)")
                             .FontSize(10).FontColor(Colors.Grey.Medium).Italic();
                     }
 
-                    // Pokud má otázka definované odpovědi (Uzavřená otázka)
                     if (q.ShuffledAnswers != null && q.ShuffledAnswers.Any())
                     {
                         for (int i = 0; i < q.ShuffledAnswers.Count; i++)
@@ -218,7 +230,6 @@ namespace TestyLRNS_WPF.Services
                     }
                     else
                     {
-                        // Otevřená otázka - vygenerujeme linky pro ruční dopsání odpovědi
                         qCol.Item().PaddingTop(20).PaddingLeft(15).PaddingRight(30).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
                         qCol.Item().PaddingTop(25).PaddingLeft(15).PaddingRight(30).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
                         qCol.Item().PaddingTop(25).PaddingLeft(15).PaddingRight(30).LineHorizontal(1).LineColor(Colors.Grey.Lighten1);
@@ -230,26 +241,42 @@ namespace TestyLRNS_WPF.Services
         private void ComposeAnswerKey(ColumnDescriptor col, List<ProcessedQuestion> questions)
         {
             col.Item().PaddingBottom(20).Text("Klíč správných odpovědí").Bold().FontSize(16);
-            col.Item().Table(table =>
+
+            // Vypočítáme, kolik otázek bude v jednom sloupci (zaokrouhleno nahoru)
+            int itemsPerColumn = (int)Math.Ceiling(questions.Count / 3.0);
+
+            col.Item().Row(row =>
             {
-                table.ColumnsDefinition(columns =>
+                // Vytvoříme 3 sloupce
+                for (int i = 0; i < 3; i++)
                 {
-                    columns.ConstantColumn(50); // Sloupec pro číslo
-                    columns.RelativeColumn();   // Sloupec pro písmeno / instrukci
-                });
+                    // Získáme výřez otázek pro daný sloupec
+                    var columnQuestions = questions.Skip(i * itemsPerColumn).Take(itemsPerColumn).ToList();
 
-                foreach (var q in questions)
-                {
-                    table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text($"{q.Number}.");
+                    // Vytvoříme tabulku pro konkrétní sloupec (s mezerou mezi sloupci)
+                    row.RelativeItem().PaddingRight(i < 2 ? 15 : 0).Table(table =>
+                    {
+                        table.ColumnsDefinition(columns =>
+                        {
+                            columns.ConstantColumn(30); // Zúžený sloupec pro číslo
+                            columns.RelativeColumn();   // Sloupec pro odpověď
+                        });
 
-                    if (q.ShuffledAnswers != null && q.ShuffledAnswers.Any())
-                    {
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text(q.CorrectLetter.ToString()).Bold();
-                    }
-                    else
-                    {
-                        table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).Padding(4).Text("(Otevřená otázka - nutné individuální vyhodnocení)").FontColor(Colors.Grey.Medium);
-                    }
+                        foreach (var q in columnQuestions)
+                        {
+                            table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).Text($"{q.Number}.");
+
+                            if (q.ShuffledAnswers != null && q.ShuffledAnswers.Any())
+                            {
+                                table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).Text(q.CorrectLetter.ToString()).Bold();
+                            }
+                            else
+                            {
+                                // Zkrácený text, aby se vešel do třetinového sloupce
+                                table.Cell().BorderBottom(1).BorderColor(Colors.Grey.Lighten2).PaddingVertical(4).Text("(Otevřená)").FontColor(Colors.Grey.Medium);
+                            }
+                        }
+                    });
                 }
             });
         }
