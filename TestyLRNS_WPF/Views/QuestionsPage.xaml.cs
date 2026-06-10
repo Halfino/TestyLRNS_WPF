@@ -4,7 +4,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-// Ujisti se, že namespace odpovídá tvému novému projektu:
 using TestyLRNS_WPF.Core;
 using TestyLRNS_WPF.Data.Repositories;
 using TestyLRNS_WPF.Models;
@@ -86,10 +85,13 @@ namespace TestyLRNS_WPF.Views
                 },
                 KnowledgeClassRaw = q.KnowledgeClass,
                 IsOperational = q.IsOperationalTraining,
-                IsOperationalString = q.IsOperationalTraining ? "ANO" : "NE", // Trochu počeštěno pro lepší dojem :)
+                IsOperationalString = q.IsOperationalTraining ? "ANO" : "NE",
                 OperationalColor = q.IsOperationalTraining ? new SolidColorBrush(Colors.Orange) : new SolidColorBrush(Colors.Gray),
                 AirportIcao = q.AirportIcao,
-                LocalityString = string.IsNullOrEmpty(q.AirportIcao) ? "Globální" : $"Místní ({q.AirportIcao})"
+                LocalityString = string.IsNullOrEmpty(q.AirportIcao) ? "Globální" : $"Místní ({q.AirportIcao})",
+                OwnerId = q.OwnerId,
+                OwnerName = q.OwnerName,
+                CanEdit = (_currentUser.Role == "SuperAdmin" || q.OwnerId == _currentUser.Id || q.OwnerId == null)
             }).ToList();
 
             UpdateTopicsDropdown();
@@ -214,9 +216,8 @@ namespace TestyLRNS_WPF.Views
 
         private void BtnAddQuestion_Click(object sender, RoutedEventArgs e)
         {
-
             var dialog = new AddQuestionDialog(_currentUser);
-            
+
             bool? result = dialog.ShowDialog();
 
             if (result == true && dialog.NewQuestion != null)
@@ -224,7 +225,6 @@ namespace TestyLRNS_WPF.Views
                 _questionRepository.Add(dialog.NewQuestion);
                 RefreshData();
             }
-            
         }
 
         private void BtnEdit_Click(object sender, RoutedEventArgs e)
@@ -234,7 +234,14 @@ namespace TestyLRNS_WPF.Views
                 var question = _questionRepository.GetById(questionId);
                 if (question == null) return;
 
-                // Odpoznámkováno a přidáno vycentrování nad hlavní aplikaci
+                // Kontrola vlastnictví
+                bool canEdit = (_currentUser.Role == "SuperAdmin" || question.OwnerId == _currentUser.Id || question.OwnerId == null);
+                if (!canEdit)
+                {
+                    MessageBox.Show("Tuto otázku nemůžete upravovat, protože nejste jejím vlastníkem.", "Přístup odepřen", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 var dialog = new AddQuestionDialog(_currentUser, question);
                 dialog.Owner = Window.GetWindow(this);
 
@@ -252,6 +259,17 @@ namespace TestyLRNS_WPF.Views
         {
             if (sender is Button btn && btn.Tag is int questionId)
             {
+                var question = _questionRepository.GetById(questionId);
+                if (question == null) return;
+
+                // Kontrola vlastnictví
+                bool canEdit = (_currentUser.Role == "SuperAdmin" || question.OwnerId == _currentUser.Id || question.OwnerId == null);
+                if (!canEdit)
+                {
+                    MessageBox.Show("Tuto otázku nemůžete smazat, protože nejste jejím vlastníkem.", "Přístup odepřen", MessageBoxButton.OK, MessageBoxImage.Warning);
+                    return;
+                }
+
                 MessageBoxResult result = MessageBox.Show(
                     "Opravdu chcete tuto otázku vyřadit z databáze?",
                     "Odstranit otázku?",
@@ -281,6 +299,10 @@ namespace TestyLRNS_WPF.Views
             public SolidColorBrush OperationalColor { get; set; } = new(Colors.White);
             public string? AirportIcao { get; set; }
             public string LocalityString { get; set; } = string.Empty;
+
+            public int? OwnerId { get; set; }
+            public string OwnerName { get; set; } = string.Empty;
+            public bool CanEdit { get; set; }
         }
     }
 }

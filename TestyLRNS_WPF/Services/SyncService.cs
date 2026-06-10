@@ -79,20 +79,23 @@ namespace TestyLRNS_WPF.Services
                     updated_at = reader.GetDateTime(reader.GetOrdinal("updated_at")).ToString("o")
                 });
 
-            // 4. Questions (Přidán image_path)
-            await PushDataAsync("Questions", "questions", "SELECT * FROM Questions WHERE sync_status = 0;", reader => new {
-                global_id = reader.GetString(reader.GetOrdinal("global_id")),
-                text = reader.GetString(reader.GetOrdinal("text")),
-                written = reader.GetBoolean(reader.GetOrdinal("written")),
-                knowledge_class = reader.GetInt32(reader.GetOrdinal("knowledge_class")),
-                unit = reader.IsDBNull(reader.GetOrdinal("unit")) ? null : reader.GetString(reader.GetOrdinal("unit")),
-                system_topic = reader.IsDBNull(reader.GetOrdinal("system_topic")) ? null : reader.GetString(reader.GetOrdinal("system_topic")),
-                airport_icao = reader.IsDBNull(reader.GetOrdinal("airport_icao")) ? null : reader.GetString(reader.GetOrdinal("airport_icao")),
-                is_operational_training = reader.GetBoolean(reader.GetOrdinal("is_operational_training")),
-                is_active = reader.GetBoolean(reader.GetOrdinal("is_active")),
-                image_path = reader.IsDBNull(reader.GetOrdinal("image_path")) ? null : reader.GetString(reader.GetOrdinal("image_path")),
-                updated_at = reader.GetDateTime(reader.GetOrdinal("updated_at")).ToString("o")
-            });
+            // 4. Questions (Přidán image_path a owner_global_id)
+            await PushDataAsync("Questions", "questions",
+                "SELECT q.*, u.global_id as owner_global_id FROM Questions q LEFT JOIN Users u ON q.owner_id = u.id WHERE q.sync_status = 0;",
+                reader => new {
+                    global_id = reader.GetString(reader.GetOrdinal("global_id")),
+                    text = reader.GetString(reader.GetOrdinal("text")),
+                    written = reader.GetBoolean(reader.GetOrdinal("written")),
+                    knowledge_class = reader.GetInt32(reader.GetOrdinal("knowledge_class")),
+                    unit = reader.IsDBNull(reader.GetOrdinal("unit")) ? null : reader.GetString(reader.GetOrdinal("unit")),
+                    system_topic = reader.IsDBNull(reader.GetOrdinal("system_topic")) ? null : reader.GetString(reader.GetOrdinal("system_topic")),
+                    airport_icao = reader.IsDBNull(reader.GetOrdinal("airport_icao")) ? null : reader.GetString(reader.GetOrdinal("airport_icao")),
+                    is_operational_training = reader.GetBoolean(reader.GetOrdinal("is_operational_training")),
+                    is_active = reader.GetBoolean(reader.GetOrdinal("is_active")),
+                    image_path = reader.IsDBNull(reader.GetOrdinal("image_path")) ? null : reader.GetString(reader.GetOrdinal("image_path")),
+                    owner_id = reader.IsDBNull(reader.GetOrdinal("owner_global_id")) ? null : reader.GetString(reader.GetOrdinal("owner_global_id")), // Odesíláme Global ID
+                    updated_at = reader.GetDateTime(reader.GetOrdinal("updated_at")).ToString("o")
+                });
 
             // 5. Answers (Vyžaduje question_global_id)
             await PushDataAsync("Answers", "answers",
@@ -196,12 +199,12 @@ namespace TestyLRNS_WPF.Services
                 cmd.ExecuteNonQuery();
             });
 
-            // 4. Questions (Přidán image_path)
+            // 4. Questions (Přidán image_path a owner_id)
             await PullTableAsync("questions", lastSync, (jsonObj, connection, transaction) =>
             {
-                using var cmd = new SqliteCommand(@"INSERT INTO Questions (global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path)
-                    VALUES (@g, 1, @u, @text, @written, @class, @unit, @topic, @icao, @isOp, @act, @imgPath)
-                    ON CONFLICT(global_id) DO UPDATE SET updated_at=@u, text=@text, written=@written, knowledge_class=@class, unit=@unit, system_topic=@topic, airport_icao=@icao, is_operational_training=@isOp, is_active=@act, image_path=@imgPath, sync_status=1;", connection, transaction);
+                using var cmd = new SqliteCommand(@"INSERT INTO Questions (global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path, owner_id)
+                    VALUES (@g, 1, @u, @text, @written, @class, @unit, @topic, @icao, @isOp, @act, @imgPath, (SELECT id FROM Users WHERE global_id = @ouuid))
+                    ON CONFLICT(global_id) DO UPDATE SET updated_at=@u, text=@text, written=@written, knowledge_class=@class, unit=@unit, system_topic=@topic, airport_icao=@icao, is_operational_training=@isOp, is_active=@act, image_path=@imgPath, owner_id=(SELECT id FROM Users WHERE global_id = @ouuid), sync_status=1;", connection, transaction);
 
                 cmd.Parameters.AddWithValue("@g", jsonObj.GetProperty("global_id").GetString());
                 cmd.Parameters.AddWithValue("@u", jsonObj.GetProperty("updated_at").GetDateTime());
@@ -214,6 +217,7 @@ namespace TestyLRNS_WPF.Services
                 cmd.Parameters.AddWithValue("@isOp", jsonObj.GetProperty("is_operational_training").GetBoolean());
                 cmd.Parameters.AddWithValue("@act", jsonObj.GetProperty("is_active").GetBoolean());
                 cmd.Parameters.AddWithValue("@imgPath", GetStringOrNull(jsonObj, "image_path"));
+                cmd.Parameters.AddWithValue("@ouuid", GetStringOrNull(jsonObj, "owner_id")); // Hledá se podle global_id majitele
                 cmd.ExecuteNonQuery();
             });
 
@@ -283,27 +287,23 @@ namespace TestyLRNS_WPF.Services
         {
             try
             {
-                // Zavoláme naši novou SQL funkci v Supabase
                 var response = await _httpClient.PostAsync($"{_supabaseUrl}/rpc/get_cloud_status", null);
                 if (response.IsSuccessStatusCode)
                 {
                     var jsonString = await response.Content.ReadAsStringAsync();
-
-                    // Rychlé parsování JSONu bez nutnosti složitých tříd
                     using var doc = System.Text.Json.JsonDocument.Parse(jsonString);
                     var root = doc.RootElement;
 
                     long dbBytes = root.GetProperty("db_size_bytes").GetInt64();
                     long storageBytes = root.GetProperty("bucket_size_bytes").GetInt64();
 
-                    // Převod z Bytů na Megabyty (MB)
                     double dbMb = Math.Round(dbBytes / 1048576.0, 2);
                     double storageMb = Math.Round(storageBytes / 1048576.0, 2);
 
                     return (dbMb, storageMb);
                 }
             }
-            catch { /* Ignorujeme chyby sítě, prostě vrátíme 0 */ }
+            catch { /* Ignorujeme chyby sítě */ }
 
             return (0, 0);
         }
@@ -325,16 +325,13 @@ namespace TestyLRNS_WPF.Services
                 string endpoint = $"{_supabaseUrl.Replace("/rest/v1", "")}/storage/v1/object/question-images/{fileName}";
                 var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
                 request.Content = content;
-
-                // Přidáno pro povolení přepisu (upsert) pokud soubor už existuje
                 request.Headers.Add("x-upsert", "true");
 
-                // Pošleme na pozadí, abychom zbytečně nezdržovali celou aplikaci pokud by jeden soubor selhal
                 try
                 {
                     await _httpClient.SendAsync(request);
                 }
-                catch { /* Bezpečná ignorace v rámci robustní offline architektury */ }
+                catch { /* Bezpečná ignorace */ }
             }
         }
 
@@ -359,7 +356,6 @@ namespace TestyLRNS_WPF.Services
 
             foreach (var img in imagesToDownload)
             {
-                // Používáme public endpoint, protože bucket pro schémata jsme založili jako Public
                 string endpoint = $"{_supabaseUrl.Replace("/rest/v1", "")}/storage/v1/object/public/question-images/{img}";
                 var request = new HttpRequestMessage(HttpMethod.Get, endpoint);
 
@@ -372,7 +368,7 @@ namespace TestyLRNS_WPF.Services
                         await File.WriteAllBytesAsync(Path.Combine(imgDir, img), bytes);
                     }
                 }
-                catch { /* Bezpečná ignorace lokálního selhání stahování */ }
+                catch { /* Bezpečná ignorace */ }
             }
         }
 

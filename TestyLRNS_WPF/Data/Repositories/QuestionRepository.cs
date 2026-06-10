@@ -13,11 +13,23 @@ namespace TestyLRNS_WPF.Data.Repositories
             var questions = new List<Question>();
             using var connection = DatabaseHelper.GetConnection();
 
-            // PŘIDÁNO: image_path na konec
-            string query = "SELECT id, global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path FROM Questions WHERE is_active = 1";
-            if (!string.IsNullOrEmpty(unit)) query += " AND unit = @unit";
-            if (!string.IsNullOrEmpty(airportIcao)) query += " AND (airport_icao IS NULL OR airport_icao = @icao)";
-            if (!string.IsNullOrEmpty(systemTopic)) query += " AND system_topic = @topic";
+            // PŘIDÁNO: LEFT JOIN na tabulku Persons a složení jména přes CASE
+            string query = @"
+                SELECT q.id, q.global_id, q.sync_status, q.updated_at, q.text, q.written, q.knowledge_class, q.unit, q.system_topic, 
+                q.airport_icao, q.is_operational_training, q.is_active, q.image_path,
+                q.owner_id, 
+                CASE 
+                    WHEN p.id IS NOT NULL THEN IFNULL(p.rank || ' ', '') || p.last_name || ' - ' || IFNULL(u.airport_icao, 'Globální')
+                    ELSE u.username
+                END AS owner_display
+                FROM Questions q
+                LEFT JOIN Users u ON q.owner_id = u.id
+                LEFT JOIN Persons p ON u.linked_person_id = p.id
+                WHERE q.is_active = 1";
+
+            if (!string.IsNullOrEmpty(unit)) query += " AND q.unit = @unit";
+            if (!string.IsNullOrEmpty(airportIcao)) query += " AND (q.airport_icao IS NULL OR q.airport_icao = @icao)";
+            if (!string.IsNullOrEmpty(systemTopic)) query += " AND q.system_topic = @topic";
 
             using var command = new SqliteCommand(query, connection);
             if (!string.IsNullOrEmpty(unit)) command.Parameters.AddWithValue("@unit", unit);
@@ -41,7 +53,9 @@ namespace TestyLRNS_WPF.Data.Repositories
                     AirportIcao = reader.IsDBNull(9) ? null : reader.GetString(9),
                     IsOperationalTraining = reader.GetBoolean(10),
                     IsActive = reader.GetBoolean(11),
-                    ImagePath = reader.IsDBNull(12) ? null : reader.GetString(12) // PŘIDÁNO
+                    ImagePath = reader.IsDBNull(12) ? null : reader.GetString(12),
+                    OwnerId = reader.IsDBNull(13) ? null : reader.GetInt32(13),
+                    OwnerName = reader.IsDBNull(14) ? "Neznámý" : reader.GetString(14)
                 };
                 questions.Add(question);
             }
@@ -58,8 +72,21 @@ namespace TestyLRNS_WPF.Data.Repositories
         public Question? GetById(int id)
         {
             using var connection = DatabaseHelper.GetConnection();
-            // PŘIDÁNO: image_path
-            string query = "SELECT id, global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path FROM Questions WHERE id = @id AND is_active = 1;";
+
+            // PŘIDÁNO: LEFT JOIN na tabulku Persons a složení jména přes CASE
+            string query = @"
+                SELECT q.id, q.global_id, q.sync_status, q.updated_at, q.text, q.written, q.knowledge_class, 
+                       q.unit, q.system_topic, q.airport_icao, q.is_operational_training, q.is_active, q.image_path,
+                       q.owner_id, 
+                       CASE 
+                           WHEN p.id IS NOT NULL THEN IFNULL(p.rank || ' ', '') || p.last_name || ' - ' || IFNULL(u.airport_icao, 'Globální')
+                           ELSE u.username
+                       END AS owner_display
+                FROM Questions q 
+                LEFT JOIN Users u ON q.owner_id = u.id
+                LEFT JOIN Persons p ON u.linked_person_id = p.id
+                WHERE q.id = @id AND q.is_active = 1;";
+
             using var command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@id", id);
 
@@ -80,7 +107,9 @@ namespace TestyLRNS_WPF.Data.Repositories
                     AirportIcao = reader.IsDBNull(9) ? null : reader.GetString(9),
                     IsOperationalTraining = reader.GetBoolean(10),
                     IsActive = reader.GetBoolean(11),
-                    ImagePath = reader.IsDBNull(12) ? null : reader.GetString(12) // PŘIDÁNO
+                    ImagePath = reader.IsDBNull(12) ? null : reader.GetString(12),
+                    OwnerId = reader.IsDBNull(13) ? null : reader.GetInt32(13),
+                    OwnerName = reader.IsDBNull(14) ? "Neznámý" : reader.GetString(14)
                 };
                 q.Answers = new ObservableCollection<Answer>(GetActiveAnswersForQuestion(q.Id, connection));
                 q.AnswerCount = q.Answers.Count;
@@ -94,9 +123,8 @@ namespace TestyLRNS_WPF.Data.Repositories
             if (string.IsNullOrEmpty(question.GlobalId)) question.GlobalId = Guid.NewGuid().ToString();
             using var connection = DatabaseHelper.GetConnection();
 
-            // PŘIDÁNO: image_path do INSERT a parametrů
-            string qQuery = @"INSERT INTO Questions (global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path) 
-                              VALUES (@globalId, 0, CURRENT_TIMESTAMP, @text, @written, @class, @unit, @topic, @icao, @isOp, 1, @imgPath);
+            string qQuery = @"INSERT INTO Questions (global_id, sync_status, updated_at, text, written, knowledge_class, unit, system_topic, airport_icao, is_operational_training, is_active, image_path, owner_id) 
+                              VALUES (@globalId, 0, CURRENT_TIMESTAMP, @text, @written, @class, @unit, @topic, @icao, @isOp, 1, @imgPath, @ownerId);
                               SELECT last_insert_rowid();";
 
             using var qCmd = new SqliteCommand(qQuery, connection);
@@ -108,7 +136,8 @@ namespace TestyLRNS_WPF.Data.Repositories
             qCmd.Parameters.AddWithValue("@topic", (object?)question.SystemTopic ?? DBNull.Value);
             qCmd.Parameters.AddWithValue("@icao", (object?)question.AirportIcao ?? DBNull.Value);
             qCmd.Parameters.AddWithValue("@isOp", question.IsOperationalTraining);
-            qCmd.Parameters.AddWithValue("@imgPath", (object?)question.ImagePath ?? DBNull.Value); // PŘIDÁNO
+            qCmd.Parameters.AddWithValue("@imgPath", (object?)question.ImagePath ?? DBNull.Value);
+            qCmd.Parameters.AddWithValue("@ownerId", (object?)question.OwnerId ?? DBNull.Value);
 
             int newQuestionId = Convert.ToInt32(qCmd.ExecuteScalar());
 
@@ -132,7 +161,6 @@ namespace TestyLRNS_WPF.Data.Repositories
         {
             using var connection = DatabaseHelper.GetConnection();
 
-            // PŘIDÁNO: image_path do UPDATE a parametrů
             string qQuery = @"UPDATE Questions 
                               SET text = @text, written = @written, knowledge_class = @class, 
                                   unit = @unit, system_topic = @topic, airport_icao = @icao, is_operational_training = @isOp, image_path = @imgPath,
@@ -148,7 +176,7 @@ namespace TestyLRNS_WPF.Data.Repositories
             qCmd.Parameters.AddWithValue("@topic", (object?)question.SystemTopic ?? DBNull.Value);
             qCmd.Parameters.AddWithValue("@icao", (object?)question.AirportIcao ?? DBNull.Value);
             qCmd.Parameters.AddWithValue("@isOp", question.IsOperationalTraining);
-            qCmd.Parameters.AddWithValue("@imgPath", (object?)question.ImagePath ?? DBNull.Value); // PŘIDÁNO
+            qCmd.Parameters.AddWithValue("@imgPath", (object?)question.ImagePath ?? DBNull.Value);
             qCmd.ExecuteNonQuery();
 
             string deleteAnsQuery = "UPDATE Answers SET is_active = 0, sync_status = 0, updated_at = CURRENT_TIMESTAMP WHERE question_id = @qid;";

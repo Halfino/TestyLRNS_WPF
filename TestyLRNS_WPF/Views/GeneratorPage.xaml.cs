@@ -4,7 +4,6 @@ using System.Linq;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Media;
-// Aktualizované namespacy pro WPF projekt:
 using TestyLRNS_WPF.Core;
 using TestyLRNS_WPF.Data.Repositories;
 using TestyLRNS_WPF.Models;
@@ -94,6 +93,8 @@ namespace TestyLRNS_WPF.Views
             if (_isInitializing) return;
             UpdateTopics();
             LoadPersons();
+
+            if (TsManualMode != null && TsManualMode.IsOn) LoadManualQuestions();
         }
 
         private void UpdateTopics()
@@ -135,11 +136,119 @@ namespace TestyLRNS_WPF.Views
             {
                 CbTopic.SelectedIndex = 0;
             }
+
+            if (!_isInitializing && TsManualMode != null && TsManualMode.IsOn)
+            {
+                LoadManualQuestions();
+            }
+        }
+
+        private void CbTopic_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (_isInitializing) return;
+            if (TsManualMode != null && TsManualMode.IsOn)
+            {
+                LoadManualQuestions();
+            }
+        }
+
+        private void TsManualMode_Toggled(object sender, RoutedEventArgs e)
+        {
+            if (TsManualMode.IsOn)
+            {
+                // MANUÁLNÍ REŽIM: 
+                // Skrýt počet otázek a ukázat pravý panel s ručním výběrem
+                PanelManualSelection.Visibility = Visibility.Visible;
+                PanelQuestionCount.Visibility = Visibility.Collapsed;
+
+                // Dynamicky přesunout seznam techniků doleva pod parametry (Sloupec 0, Řádek 1)
+                Grid.SetColumn(PanelPersons, 0);
+                Grid.SetRow(PanelPersons, 1);
+                Grid.SetRowSpan(PanelPersons, 1);
+                PanelPersons.Margin = new Thickness(0, 20, 20, 0); // Vlevo přidat margin zprava a shora
+
+                LoadManualQuestions();
+            }
+            else
+            {
+                // AUTOMATICKÝ REŽIM: 
+                // Znovu ukázat počet otázek a skrýt pravý panel
+                PanelManualSelection.Visibility = Visibility.Collapsed;
+                PanelQuestionCount.Visibility = Visibility.Visible;
+
+                // Přesunout seznam techniků zpět na celé pravé okno (Sloupec 1, Řádek 0 + RowSpan 2)
+                Grid.SetColumn(PanelPersons, 1);
+                Grid.SetRow(PanelPersons, 0);
+                Grid.SetRowSpan(PanelPersons, 2);
+                PanelPersons.Margin = new Thickness(0, 0, 0, 0); // Zrušit margin
+            }
+        }
+
+        private void LoadManualQuestions()
+        {
+            if (CbBase.SelectedItem == null || CbUnit.SelectedItem == null) return;
+
+            string selectedBase = (CbBase.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
+            string selectedUnit = (CbUnit.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
+
+            var allDbQuestions = _questionRepo.GetAllActive(selectedUnit, selectedBase);
+
+            bool includeOp = false;
+            bool onlyOp = false;
+            List<string>? allowedTopics = null;
+
+            switch (CbTestType.SelectedIndex)
+            {
+                case 0:
+                case 1:
+                    includeOp = false; onlyOp = false; break;
+                case 2:
+                    includeOp = true; onlyOp = true; break;
+                case 3:
+                    includeOp = true; onlyOp = false; break;
+                case 4:
+                    if (CbTopic.SelectedIndex > 0)
+                    {
+                        allowedTopics = new List<string> { CbTopic.SelectedItem.ToString()! };
+                    }
+                    break;
+            }
+
+            var filtered = allDbQuestions.AsEnumerable();
+
+            if (onlyOp)
+            {
+                filtered = filtered.Where(q => q.IsOperationalTraining);
+            }
+            else if (!includeOp)
+            {
+                filtered = filtered.Where(q => !q.IsOperationalTraining);
+            }
+
+            if (allowedTopics != null && allowedTopics.Count > 0)
+            {
+                filtered = filtered.Where(q => !string.IsNullOrEmpty(q.SystemTopic) && allowedTopics.Contains(q.SystemTopic));
+            }
+
+            LvManualQuestions.ItemsSource = filtered.ToList();
+
+            UpdateManualSelectionCount();
+        }
+
+        private void LvManualQuestions_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            UpdateManualSelectionCount();
+        }
+
+        private void UpdateManualSelectionCount()
+        {
+            if (TxtManualSelectionCount != null && LvManualQuestions != null)
+            {
+                TxtManualSelectionCount.Text = $"Vybráno: {LvManualQuestions.SelectedItems.Count} otázek";
+            }
         }
 
         private void BtnSelectAll_Click(object sender, RoutedEventArgs e) => LvPersons.SelectAll();
-
-        // WPF ZMĚNA: WPF ListBox používá metodu UnselectAll()
         private void BtnDeselectAll_Click(object sender, RoutedEventArgs e) => LvPersons.UnselectAll();
 
         private void BtnGenerate_Click(object sender, RoutedEventArgs e)
@@ -152,7 +261,6 @@ namespace TestyLRNS_WPF.Views
 
             string testTypeStr = (CbTestType.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Test";
 
-            // WPF ZMĚNA: ModernWPF NumberBox.Value používá double a defaultně vrací double.NaN. Bezpečné přetypování na int.
             int questionCount = !double.IsNaN(NbQuestionCount.Value) ? (int)NbQuestionCount.Value : 30;
 
             bool includeOp = false;
@@ -189,11 +297,41 @@ namespace TestyLRNS_WPF.Views
             {
                 try
                 {
-                    TestResult result = _testGenService.GenerateTest(
-                        selectedPerson, _currentUser, testTypeStr, questionCount,
-                        allowedTopics, includeOp, onlyOp);
+                    TestResult result;
+                    List<Question> questionsForPdf;
 
-                    var questionsForPdf = result.QuestionIds.Select(id => allDbQuestions.First(q => q.Id == id)).ToList();
+                    if (TsManualMode.IsOn)
+                    {
+                        // MANUÁLNÍ REŽIM
+                        questionsForPdf = LvManualQuestions.SelectedItems.Cast<Question>().ToList();
+
+                        if (questionsForPdf.Count == 0)
+                        {
+                            ShowStatus("V manuálním režimu musíte vybrat alespoň jednu otázku.", false);
+                            return;
+                        }
+
+                        result = new TestResult
+                        {
+                            GlobalId = Guid.NewGuid().ToString(),
+                            PersonId = selectedPerson.Id,
+                            DateGenerated = DateTime.Now,
+                            GeneratedByUserId = _currentUser.Id,
+                            RandomSeed = new Random().Next(),
+                            TestType = testTypeStr,
+                            MaxScore = questionsForPdf.Count,
+                            QuestionIds = questionsForPdf.Select(q => q.Id).ToList()
+                        };
+                    }
+                    else
+                    {
+                        // AUTOMATICKÝ REŽIM
+                        result = _testGenService.GenerateTest(
+                            selectedPerson, _currentUser, testTypeStr, questionCount,
+                            allowedTopics, includeOp, onlyOp);
+
+                        questionsForPdf = result.QuestionIds.Select(id => allDbQuestions.FirstOrDefault(q => q.Id == id)).Where(q => q != null).Cast<Question>().ToList();
+                    }
 
                     lastUsedFile = _pdfService.GetExportFilePath(selectedPerson, testTypeStr, out lastUsedDirectory);
                     result.PdfPath = lastUsedFile;
@@ -212,7 +350,9 @@ namespace TestyLRNS_WPF.Views
             }
 
             ShowStatus($"Úspěšně vygenerováno a uloženo {successCount} testů.", true);
-            LvPersons.UnselectAll(); // Po úspěšném generování seznam odznačíme
+
+            LvPersons.UnselectAll();
+            LvManualQuestions.UnselectAll();
 
             if (successCount == 1)
             {
