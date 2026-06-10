@@ -154,6 +154,14 @@ namespace TestyLRNS_WPF.Data
             try
             {
                 command.CommandText = "ALTER TABLE Questions ADD COLUMN image_path TEXT;";
+                command.ExecuteNonQuery();
+            }
+            catch (SqliteException)
+            {
+                // Ignorujeme - sloupec už existuje
+            }
+            try
+            {
                 command.CommandText = "ALTER TABLE Questions ADD COLUMN owner_id INTEGER REFERENCES Users(id);";
                 command.ExecuteNonQuery();
             }
