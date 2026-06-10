@@ -14,17 +14,21 @@
             <ColumnDefinition Width="1.2*"/>
             <ColumnDefinition Width="2*"/>
         </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
 
-        <Border Grid.Column="0" Background="#1E1E1E" CornerRadius="8" Padding="20" BorderBrush="#333" BorderThickness="1" Margin="0,0,20,0" VerticalAlignment="Top">
+        <Border x:Name="PanelParameters" Grid.Column="0" Grid.Row="0" Background="#1E1E1E" CornerRadius="8" Padding="20" BorderBrush="#333" BorderThickness="1" Margin="0,0,20,0" VerticalAlignment="Top">
             <StackPanel>
                 <TextBlock Text="Parametry zkoušky" FontSize="20" FontWeight="SemiBold" Foreground="#4DA6FF" Margin="0,0,0,18"/>
 
-                <StackPanel Margin="0,0,0,18">
+                <StackPanel Margin="0,0,0,15">
                     <TextBlock Text="Základna (Letiště)" Foreground="LightGray" Margin="0,0,0,4"/>
                     <ComboBox x:Name="CbBase" HorizontalAlignment="Stretch" SelectionChanged="CbBaseOrUnit_SelectionChanged"/>
                 </StackPanel>
 
-                <StackPanel Margin="0,0,0,18">
+                <StackPanel Margin="0,0,0,15">
                     <TextBlock Text="Odbornost" Foreground="LightGray" Margin="0,0,0,4"/>
                     <ComboBox x:Name="CbUnit" HorizontalAlignment="Stretch" SelectionChanged="CbBaseOrUnit_SelectionChanged">
                         <ComboBoxItem Content="SZP"/>
@@ -35,9 +39,9 @@
                     </ComboBox>
                 </StackPanel>
 
-                <Rectangle Height="1" Fill="#333" Margin="0,5,0,23"/>
+                <Rectangle Height="1" Fill="#333" Margin="0,5,0,20"/>
 
-                <StackPanel Margin="0,0,0,18">
+                <StackPanel Margin="0,0,0,15">
                     <TextBlock Text="Druh testu" Foreground="LightGray" Margin="0,0,0,4"/>
                     <ComboBox x:Name="CbTestType" HorizontalAlignment="Stretch" SelectedIndex="0" SelectionChanged="CbTestType_SelectionChanged">
                         <ComboBoxItem Content="Průřezový test (Všechna témata)"/>
@@ -48,17 +52,22 @@
                     </ComboBox>
                 </StackPanel>
 
-                <StackPanel Margin="0,0,0,18">
+                <StackPanel Margin="0,0,0,15">
                     <TextBlock Text="Konkrétní téma (Systém)" Foreground="LightGray" Margin="0,0,0,4"/>
-                    <ComboBox x:Name="CbTopic" HorizontalAlignment="Stretch" IsEnabled="False" ui:ControlHelper.PlaceholderText="Vyberte téma..."/>
+                    <ComboBox x:Name="CbTopic" HorizontalAlignment="Stretch" IsEnabled="False" ui:ControlHelper.PlaceholderText="Vyberte téma..." SelectionChanged="CbTopic_SelectionChanged"/>
                 </StackPanel>
 
-                <StackPanel Margin="0,0,0,18">
+                <StackPanel Margin="0,0,0,15">
+                    <TextBlock Text="Režim generování testu" Foreground="LightGray" Margin="0,0,0,4"/>
+                    <ui:ToggleSwitch x:Name="TsManualMode" OffContent="Automatický (náhodný výběr)" OnContent="Manuální (výběr otázek)" Toggled="TsManualMode_Toggled"/>
+                </StackPanel>
+
+                <StackPanel x:Name="PanelQuestionCount" Margin="0,0,0,15">
                     <TextBlock Text="Počet otázek v testu" Foreground="LightGray" Margin="0,0,0,4"/>
                     <ui:NumberBox x:Name="NbQuestionCount" Value="30" Minimum="5" Maximum="100" SpinButtonPlacementMode="Inline" HorizontalAlignment="Stretch"/>
                 </StackPanel>
 
-                <TextBlock x:Name="TxtStatus" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,10,0,0"/>
+                <TextBlock x:Name="TxtStatus" FontWeight="SemiBold" TextWrapping="Wrap" Margin="0,5,0,0"/>
 
                 <Button x:Name="BtnGenerate" Background="#00509E" Foreground="White" HorizontalAlignment="Stretch" Height="45" Margin="0,10,0,0" Click="BtnGenerate_Click">
                     <StackPanel Orientation="Horizontal" HorizontalAlignment="Center">
@@ -69,7 +78,7 @@
             </StackPanel>
         </Border>
 
-        <Border Grid.Column="1" Background="#1E1E1E" CornerRadius="8" Padding="20" BorderBrush="#333" BorderThickness="1">
+        <Border x:Name="PanelPersons" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Background="#1E1E1E" CornerRadius="8" Padding="20" BorderBrush="#333" BorderThickness="1">
             <Grid>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
@@ -77,26 +86,26 @@
                     <RowDefinition Height="*"/>
                 </Grid.RowDefinitions>
 
-                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
-                    <TextBlock Text="Testovaní technici" FontSize="20" FontWeight="SemiBold" Foreground="#4DA6FF" VerticalAlignment="Center" Margin="0,0,15,0"/>
-                    <Button Content="Vybrat všechny" Background="#00509E" Click="BtnSelectAll_Click" Margin="0,0,10,0"/>
-                    <Button Content="Zrušit výběr" Background="#00509E" Click="BtnDeselectAll_Click"/>
+                <StackPanel Grid.Row="0" Margin="0,0,0,15">
+                    <TextBlock Text="Testovaní technici" FontSize="20" FontWeight="SemiBold" Foreground="#4DA6FF" Margin="0,0,10,0"/>
+                    <StackPanel Orientation="Horizontal">
+                        <Button Content="Vybrat všechny" Background="#2D2D2D" Click="BtnSelectAll_Click" Margin="0,0,10,0"/>
+                        <Button Content="Zrušit výběr" Background="#2D2D2D" Click="BtnDeselectAll_Click"/>
+                    </StackPanel>
                 </StackPanel>
 
                 <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="10,5,10,5" Margin="0,0,0,5">
                     <Grid>
                         <Grid.ColumnDefinitions>
                             <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
-                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="60"/>
                         </Grid.ColumnDefinitions>
                         <TextBlock Grid.Column="0" Text="Jméno a příjmení" FontWeight="Bold" Foreground="Gray"/>
-                        <TextBlock Grid.Column="1" Text="Znalostní třída" FontWeight="Bold" Foreground="Gray"/>
-                        <TextBlock Grid.Column="2" Text="Platnost do" FontWeight="Bold" Foreground="Gray"/>
+                        <TextBlock Grid.Column="1" Text="Třída" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
                     </Grid>
                 </Border>
 
-                <ListBox x:Name="LvPersons" Grid.Row="2" SelectionMode="Multiple" Background="Transparent" BorderThickness="0">
+                <ListBox x:Name="LvPersons" Grid.Row="2" SelectionMode="Multiple" Background="Transparent" BorderThickness="0" ScrollViewer.VerticalScrollBarVisibility="Auto">
                     <ListBox.ItemContainerStyle>
                         <Style TargetType="ListBoxItem">
                             <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
@@ -107,16 +116,73 @@
                             <Grid Margin="0,10,0,10">
                                 <Grid.ColumnDefinitions>
                                     <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
-                                    <ColumnDefinition Width="*"/>
+                                    <ColumnDefinition Width="60"/>
                                 </Grid.ColumnDefinitions>
                                 <TextBlock Grid.Column="0" Text="{Binding FullNameWithRank}" FontWeight="Bold" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="1" Text="{Binding KnowledgeClassText}" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Column="2" Text="{Binding ValidUntilString}" VerticalAlignment="Center" Foreground="Gray"/>
+                                <TextBlock Grid.Column="1" Text="{Binding KnowledgeClassText}" VerticalAlignment="Center" HorizontalAlignment="Right"/>
                             </Grid>
                         </DataTemplate>
                     </ListBox.ItemTemplate>
                 </ListBox>
+            </Grid>
+        </Border>
+
+        <Border x:Name="PanelManualSelection" Grid.Column="1" Grid.Row="0" Grid.RowSpan="2" Visibility="Collapsed" Background="#1E1E1E" CornerRadius="8" Padding="20" BorderBrush="#333" BorderThickness="1">
+            <Grid>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="0,0,0,15">
+                    <TextBlock Text="Dostupné otázky k výběru" FontSize="20" FontWeight="SemiBold" Foreground="#4DA6FF" VerticalAlignment="Center" Margin="0,0,15,0"/>
+                    <TextBlock Text="(Vyberte prostým kliknutím na řádek)" Foreground="Gray" VerticalAlignment="Center"/>
+                </StackPanel>
+
+                <Border Grid.Row="1" BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="10,5,10,5" Margin="0,0,0,5">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="4*"/>
+                            <ColumnDefinition Width="60"/>
+                            <ColumnDefinition Width="150"/>
+                        </Grid.ColumnDefinitions>
+                        <TextBlock Grid.Column="0" Text="Znění otázky" FontWeight="Bold" Foreground="Gray"/>
+                        <TextBlock Grid.Column="1" Text="Třída" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Center"/>
+                        <TextBlock Grid.Column="2" Text="Téma" FontWeight="Bold" Foreground="Gray" HorizontalAlignment="Right"/>
+                    </Grid>
+                </Border>
+
+                <ListBox x:Name="LvManualQuestions" Grid.Row="2" SelectionMode="Multiple" SelectionChanged="LvManualQuestions_SelectionChanged" Background="Transparent" BorderThickness="0" ScrollViewer.VerticalScrollBarVisibility="Auto">
+                    <ListBox.ItemContainerStyle>
+                        <Style TargetType="ListBoxItem">
+                            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+                        </Style>
+                    </ListBox.ItemContainerStyle>
+                    <ListBox.ItemTemplate>
+                        <DataTemplate>
+                            <Grid Margin="0,8,0,8" Background="Transparent" ToolTip="{Binding Text}">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="4*"/>
+                                    <ColumnDefinition Width="60"/>
+                                    <ColumnDefinition Width="150"/>
+                                </Grid.ColumnDefinitions>
+
+                                <TextBlock Grid.Column="0" Text="{Binding Text}" TextTrimming="CharacterEllipsis" FontSize="14" Margin="0,0,15,0" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="1" Text="{Binding KnowledgeClass}" HorizontalAlignment="Center" Foreground="#4DA6FF" FontWeight="SemiBold" VerticalAlignment="Center"/>
+                                <TextBlock Grid.Column="2" Text="{Binding SystemTopic}" Foreground="Gray" HorizontalAlignment="Right" TextTrimming="CharacterEllipsis" VerticalAlignment="Center"/>
+                            </Grid>
+                        </DataTemplate>
+                    </ListBox.ItemTemplate>
+                </ListBox>
+
+                <Border Grid.Row="3" HorizontalAlignment="Right" Margin="0,15,0,0" Background="#2D2D2D" Padding="15,8" CornerRadius="4">
+                    <StackPanel Orientation="Horizontal">
+                        <ui:FontIcon Glyph="&#xE8D3;" Foreground="#4DA6FF" Margin="0,0,10,0"/>
+                        <TextBlock x:Name="TxtManualSelectionCount" Text="Vybráno: 0 otázek" VerticalAlignment="Center" Foreground="White" FontWeight="SemiBold"/>
+                    </StackPanel>
+                </Border>
             </Grid>
         </Border>
 

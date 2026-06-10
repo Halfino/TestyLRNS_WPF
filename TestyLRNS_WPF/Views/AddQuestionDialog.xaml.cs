@@ -99,8 +99,6 @@ namespace TestyLRNS_WPF.Views
                 CbUnit.IsEnabled = false;
             }
 
-            CbAirport.IsEnabled = true;
-
             _isInitializing = false;
 
             if (PanelAnswers != null && PanelImageUpload != null)
@@ -136,6 +134,7 @@ namespace TestyLRNS_WPF.Views
                 };
                 CbAirport.Items.Add(display);
             }
+            CbAirport.IsEnabled = true;
         }
 
         private void SelectUnitInComboBox(string? unit)
@@ -160,7 +159,7 @@ namespace TestyLRNS_WPF.Views
                 return;
             }
 
-            for (int i = 1; i < CbAirport.Items.Count; i++)
+            for (int i = 0; i < CbAirport.Items.Count; i++)
             {
                 string? itemContent = CbAirport.Items[i].ToString();
                 if (itemContent != null && itemContent.StartsWith(icao, StringComparison.OrdinalIgnoreCase))
@@ -174,10 +173,9 @@ namespace TestyLRNS_WPF.Views
 
         private string? GetSelectedAirportIcao()
         {
-            if (CbAirport.SelectedIndex <= 0) return null;
+            if (CbAirport.SelectedIndex < 0) return null;
             string? fullContent = CbAirport.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(fullContent)) return null;
-
             return fullContent.Split(' ')[0];
         }
 
@@ -224,7 +222,7 @@ namespace TestyLRNS_WPF.Views
                 CbClass.SelectedIndex = 0;
                 CbClass.IsEnabled = false;
 
-                if (CbAirport.SelectedIndex == 0)
+                if (CbAirport.Items.Count > 1 && CbAirport.SelectedIndex == 0)
                 {
                     string defaultAirport = _currentUser.AirportIcao ?? "LKKB";
                     SelectAirportInComboBox(defaultAirport);
@@ -281,14 +279,15 @@ namespace TestyLRNS_WPF.Views
                 return;
             }
 
-            if (TsOperational.IsOn && CbAirport.SelectedIndex == 0)
+            string? airport = GetSelectedAirportIcao();
+
+            if (TsOperational.IsOn && airport == "Globální")
             {
                 TxtErrorMessage.Text = "Provozní výcvik musí být vždy vázaný na konkrétní letiště (nelze zvolit Globální).";
                 TxtErrorMessage.Visibility = Visibility.Visible;
                 return;
             }
 
-            // Zpracování obrázku pomocí SkiaSharp
             if (_removeExistingImage)
             {
                 _finalImageFileName = null;
@@ -308,11 +307,9 @@ namespace TestyLRNS_WPF.Views
                     {
                         int maxWidth = 1600;
                         int maxHeight = 2200;
-
                         SKBitmap bitmapToEncode = originalBitmap;
                         bool isResized = false;
 
-                        // Výpočet poměru a zmenšení, pokud je to potřeba
                         if (originalBitmap.Width > maxWidth || originalBitmap.Height > maxHeight)
                         {
                             float ratioX = (float)maxWidth / originalBitmap.Width;
@@ -326,7 +323,6 @@ namespace TestyLRNS_WPF.Views
                             isResized = true;
                         }
 
-                        // Uložení s využitím kvality WEBP 80 (výborný poměr velikosti a kvality pro schémata)
                         using (var imageToSave = SKImage.FromBitmap(bitmapToEncode))
                         using (var data = imageToSave.Encode(SKEncodedImageFormat.Webp, 80))
                         using (var outputStream = File.OpenWrite(targetPath))
@@ -334,10 +330,7 @@ namespace TestyLRNS_WPF.Views
                             data.SaveTo(outputStream);
                         }
 
-                        if (isResized)
-                        {
-                            bitmapToEncode.Dispose();
-                        }
+                        if (isResized) bitmapToEncode.Dispose();
                     }
                 }
                 catch (Exception ex)
@@ -351,7 +344,6 @@ namespace TestyLRNS_WPF.Views
             int dbClass = CbClass.SelectedIndex + 1;
             string? unit = (CbUnit.SelectedItem as ComboBoxItem)?.Content.ToString();
             string? selectedTopic = CbTopic.SelectedItem?.ToString();
-            string? airport = GetSelectedAirportIcao();
 
             var questionAnswers = new List<Answer>();
 
@@ -372,7 +364,6 @@ namespace TestyLRNS_WPF.Views
                 _editingQuestion.AirportIcao = airport;
                 _editingQuestion.IsOperationalTraining = TsOperational.IsOn;
                 _editingQuestion.Answers = new ObservableCollection<Answer>(questionAnswers);
-
                 _editingQuestion.ImagePath = isWritten ? _finalImageFileName : null;
 
                 NewQuestion = _editingQuestion;
@@ -382,6 +373,7 @@ namespace TestyLRNS_WPF.Views
                 NewQuestion = new Question
                 {
                     Text = TxtQuestionText.Text.Trim(),
+                    OwnerId = _currentUser.Id, // ZDE PŘIDÁN VLASTNÍK
                     IsWritten = isWritten,
                     KnowledgeClass = dbClass,
                     Unit = unit,

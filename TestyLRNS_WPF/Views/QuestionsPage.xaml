@@ -79,9 +79,10 @@
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="*"/>
                             <ColumnDefinition Width="100"/>
                         </Grid.ColumnDefinitions>
-                        <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Grid.ColumnSpan="7" Margin="-10,0,-10,0" VerticalAlignment="Bottom"/>
+                        <Border BorderBrush="Gray" BorderThickness="0,0,0,1" Grid.ColumnSpan="8" Margin="-10,0,-10,0" VerticalAlignment="Bottom"/>
 
                         <TextBlock Grid.Column="0" Text="Znění otázky" FontWeight="Bold" Foreground="Gray"/>
                         <TextBlock Grid.Column="1" Text="Téma" FontWeight="Bold" Foreground="Gray"/>
@@ -89,7 +90,8 @@
                         <TextBlock Grid.Column="3" Text="Třída" FontWeight="Bold" Foreground="Gray"/>
                         <TextBlock Grid.Column="4" Text="Provozní" FontWeight="Bold" Foreground="Gray"/>
                         <TextBlock Grid.Column="5" Text="Lokalita" FontWeight="Bold" Foreground="Gray"/>
-                        <TextBlock Grid.Column="6" Text="Akce" FontWeight="Bold" Foreground="Gray" TextAlignment="Center"/>
+                        <TextBlock Grid.Column="6" Text="Vlastník" FontWeight="Bold" Foreground="Gray"/>
+                        <TextBlock Grid.Column="7" Text="Akce" FontWeight="Bold" Foreground="Gray" TextAlignment="Center"/>
                     </Grid>
                 </Border>
 
@@ -106,6 +108,7 @@
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="*"/>
+                                            <ColumnDefinition Width="*"/>
                                             <ColumnDefinition Width="100"/>
                                         </Grid.ColumnDefinitions>
 
@@ -116,11 +119,13 @@
                                         <TextBlock Grid.Column="4" Text="{Binding IsOperationalString}" VerticalAlignment="Center" FontWeight="Bold" Foreground="{Binding OperationalColor}"/>
                                         <TextBlock Grid.Column="5" Text="{Binding LocalityString}" VerticalAlignment="Center"/>
 
-                                        <StackPanel Grid.Column="6" Orientation="Horizontal" HorizontalAlignment="Center">
-                                            <Button Click="BtnEdit_Click" Tag="{Binding Id}" Margin="0,0,10,0" Padding="6">
+                                        <TextBlock Grid.Column="6" Text="{Binding OwnerName}" VerticalAlignment="Center" Foreground="LightGray" TextTrimming="CharacterEllipsis" Margin="0,0,10,0"/>
+
+                                        <StackPanel Grid.Column="7" Orientation="Horizontal" HorizontalAlignment="Center">
+                                            <Button Click="BtnEdit_Click" Tag="{Binding Id}" Margin="0,0,10,0" Padding="6" IsEnabled="{Binding CanEdit}">
                                                 <ui:FontIcon Glyph="&#xE70F;" FontSize="14"/>
                                             </Button>
-                                            <Button Click="BtnDelete_Click" Tag="{Binding Id}" Padding="6">
+                                            <Button Click="BtnDelete_Click" Tag="{Binding Id}" Padding="6" IsEnabled="{Binding CanEdit}">
                                                 <ui:FontIcon Glyph="&#xE74D;" FontSize="14" Foreground="#FF4444"/>
                                             </Button>
                                         </StackPanel>
