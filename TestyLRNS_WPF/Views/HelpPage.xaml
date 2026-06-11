@@ -9,59 +9,104 @@
       TextElement.Foreground="White"
       Title="Nápověda k systému">
 
-    <ScrollViewer Padding="20,20,30,40" VerticalScrollBarVisibility="Auto">
-        <StackPanel MaxWidth="900" HorizontalAlignment="Left">
+    <Grid Margin="40" MaxWidth="1920" HorizontalAlignment="Left">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
 
-            <TextBlock Text="Uživatelský manuál: Zkušební systém Testy LRNS" FontSize="28" FontWeight="Bold" Margin="0,0,0,30" Foreground="#4DA6FF"/>
+        <StackPanel Grid.Row="0">
+            <StackPanel Orientation="Horizontal" Margin="0,0,0,30">
 
-            <TextBlock Text="1. Úvod do systému" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
-            <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,25" LineHeight="22"><Run Text="Aplikace Testy LRNS slouží k centralizované správě zkušebních otázek, evidenci přezkušovaného personálu a automatizovanému generování zkušebních testů pro příslušníky Letecké radionavigační služby (LRNS)"/><Run Language="cs-cz" Text=" na úrovni leteckých základen"/><Run Text="."/><LineBreak/><LineBreak/><Run Text="Aplikace funguje primárně v režimu &quot;Offline-first&quot;. To znamená, že nevyžaduje nepřetržité připojení k síti a všechny úkony lze provádět přímo na počítači na letišti. Synchronizace s centrální databází probíhá automaticky na pozadí při startu a ukončení aplikace (pokud je připojení k dispozici)."/></TextBlock>
+                <Image Source="/Assets/rtz_badge.png" Width="80" Height="80" Stretch="Uniform" VerticalAlignment="Center"/>
 
-            <TextBlock Text="2. Uživatelské role a oprávnění (RBAC)" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
-            <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,10" LineHeight="22" Text="Přístup k funkcím systému je řízen podle přidělené role:"/>
-            <StackPanel Margin="15,0,0,25">
-                <TextBlock Text="• Instruktor: Smí generovat testy a spravovat otázky výhradně pro svou vlastní odbornost a svou domovskou základnu." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-                <TextBlock Text="• Lokální administrátor: Má práva pro svou domovskou základnu napříč všemi odbornostmi a může zakládat nové účty instruktorům." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-                <TextBlock Text="• Super Administrátor: Má neomezený přístup ke všem základnám a funkcím systému v rámci celé AČR." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                <StackPanel VerticalAlignment="Center" Margin="25,0,0,0">
+                    <TextBlock Text="Testy LRNS AČR" FontSize="32" FontWeight="Bold" Foreground="White"/>
+                    <TextBlock Text="Verze 1.0.0 (Produkční sestavení)" FontSize="14" Foreground="Gray"/>
+                </StackPanel>
             </StackPanel>
 
-            <TextBlock Text="3. Správa databáze a otázek" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
-            <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,10" LineHeight="22" Text="Při vytváření zkušebních otázek máte na výběr ze dvou typů a vztahují se na ně pravidla vlastnictví:"/>
-            <StackPanel Margin="15,0,0,25">
-                <TextBlock Text="• Test (Výběr ze 3 možností): Vyžaduje zadání 3 odpovědí a označení jedné správné. Při generování testu se pořadí odpovědí A, B, C automaticky náhodně míchá pro každého zkoušeného." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-                <TextBlock Text="• Otevřená (Psaná odpověď): V testu se vygenerují linky pro ruční vypsání odpovědi. Testovaný je hodnocen instruktorem individuálně. Ke každé otevřené otázce je možné nahrát obrazovou přílohu (schéma), která se tiskne na konec testu." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-                <TextBlock Text="• Vlastnictví otázky: Každá otázka je pevně spjata se svým autorem. Upravovat nebo mazat otázku smí pouze její vlastník nebo Super Administrátor. V případě deaktivace účtu instruktora přejde vlastnictví jeho otázek automaticky na lokálního administrátora." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-            </StackPanel>
+            <Separator Margin="0,0,0,30" Background="#444444"/>
 
-            <TextBlock Text="4. Generování zkušebních testů" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
-            <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,10" LineHeight="22" Text="Systém nyní nabízí dva hlavní režimy tvorby testů:"/>
-            <StackPanel Margin="15,0,0,10">
-                <TextBlock Text="• Automatický režim (Náhodný výběr): Algoritmus se řídí pravidlem 80/20. Pokud je generován test např. pro 2. třídu, 20 % otázek se vybere z těžké 2. třídy a 80 % ze základní 3. třídy. Pro test na 3. třídu se použije 100 % otázek ze 3. třídy. Všechny otázky v testu se následně zcela náhodně zamíchají." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-                <TextBlock Text="• Manuální režim (Vlastní výběr): Instruktor si test poskládá ručně. Po přepnutí přepínače se zobrazí seznam dostupných otázek a jednoduchým kliknutím na řádek s otázkou si instruktor sestaví test přesně na míru. Každá manuálně vybraná otázka má v testu hodnotu 1 bodu." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-            </StackPanel>
-            <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,25" LineHeight="22">
-                Testy se dělí do několika kategorií (Průřezový, Typový výcvik - Teorie / Provozní, Závěrečný test, Průběžný test). Výběr typu testu filtruje dostupné otázky a formátuje hlavičku výsledného dokumentu.
-            </TextBlock>
+            <TextBlock Text="Vývoj a technická podpora" FontSize="18" FontWeight="SemiBold" Foreground="#4DA6FF" Margin="0,0,0,10"/>
+            <Border Background="#252525" CornerRadius="8" Padding="20" Margin="0,0,0,20">
+                <StackPanel>
+                    <TextBlock Text="Autor: Jan Koranda" FontSize="16" Foreground="White" FontWeight="Medium"/>
+                    <TextBlock Text="Organizace: Armáda České republiky - 24. základna dopravního letectva Praha Kbely" Foreground="LightGray" Margin="0,5,0,0"/>
+                    <StackPanel Orientation="Horizontal" Margin="0,15,0,0">
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE715;" Foreground="#4DA6FF" VerticalAlignment="Center"/>
+                        <TextBlock Text="jan.koranda@mo.gov.cz" Foreground="White" Margin="10,0,30,0" VerticalAlignment="Center"/>
 
-            <TextBlock Text="5. Výstupy a tisk (PDF dokumenty)" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
-            <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,10" LineHeight="22" Text="Aplikace automaticky generuje testy do formátu PDF, optimalizované pro oboustranný tisk. Struktura vygenerovaného dokumentu:"/>
-            <StackPanel Margin="15,0,0,25">
-                <TextBlock Text="1. Titulní strana: Záznamy o základně, testovaném a prostor pro hodnocení." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-                <TextBlock Text="2. Zkušební test: Zadání otázek a možností." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-                <TextBlock Text="3. Přílohy: Samostatné stránky se schématy k otevřeným otázkám (orientace na výšku/šířku se upravuje automaticky)." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-                <TextBlock Text="4. Klíč správných odpovědí: Přehledná tabulka pro instruktora vytištěná na posledním samostatném listu." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
-            </StackPanel>
-
-            <TextBlock Text="6. Historie a vyhodnocení" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
-            <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,40" LineHeight="22">
-                V záložce Dashboard aplikace sama upozorňuje na techniky, kterým se blíží expirace přezkoušení, a na testy, které čekají na zadání výsledku. Výsledek (počet bodů) se zadává přímo v aplikaci; systém automaticky spočítá procentuální úspěšnost (limit je 80 %). Ke každému vyhodnocení je možné přidat doplňující slovní poznámku, která zůstává uložena v historii přezkoušení.
-            </TextBlock>
-
-            <TextBlock Text="7. Bug report a požadavek na vývoj" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
-            <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,40" LineHeight="22">
-                V případě zjištění chyby v aplikaci nebo pokud máte návrh na vylepšení, neváhejte kontaktovat autora prostřednictvím emailu: <Run Text="jan.k.koranda@gmail.com"/>
-            </TextBlock>
-
+                        <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE717;" Foreground="#4DA6FF" VerticalAlignment="Center"/>
+                        <TextBlock Text="+420775239996" Foreground="White" Margin="10,0,0,0" VerticalAlignment="Center"/>
+                    </StackPanel>
+                </StackPanel>
+            </Border>
         </StackPanel>
-    </ScrollViewer>
+
+        <ScrollViewer Grid.Row="1" Padding="20,0,30,20" VerticalScrollBarVisibility="Auto">
+            <StackPanel>
+                <TextBlock Text="Uživatelský manuál: Zkušební systém Testy LRNS" FontSize="28" FontWeight="Bold" Margin="0,0,0,30" Foreground="#4DA6FF"/>
+
+                <TextBlock Text="1. Úvod do systému" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,25" LineHeight="22"><Run Text="Aplikace Testy LRNS slouží k centralizované správě zkušebních otázek, evidenci přezkušovaného personálu a automatizovanému generování zkušebních testů pro příslušníky Letecké radionavigační služby (LRNS)"/><Run Language="cs-cz" Text=" na úrovni leteckých základen"/><Run Text="."/><LineBreak/><LineBreak/><Run Text="Aplikace funguje primárně v režimu &quot;Offline-first&quot;. To znamená, že nevyžaduje nepřetržité připojení k síti a všechny úkony lze provádět přímo na počítači na letišti. Synchronizace s centrální databází probíhá automaticky na pozadí při startu a ukončení aplikace (pokud je připojení k dispozici)."/></TextBlock>
+
+                <TextBlock Text="2. Uživatelské role a oprávnění (RBAC)" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,10" LineHeight="22" Text="Přístup k funkcím systému je řízen podle přidělené role:"/>
+                <StackPanel Margin="15,0,0,25">
+                    <TextBlock Text="• Instruktor: Smí generovat testy a spravovat otázky výhradně pro svou vlastní odbornost a svou domovskou základnu." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                    <TextBlock Text="• Lokální administrátor: Má práva pro svou domovskou základnu napříč všemi odbornostmi a může zakládat nové účty instruktorům." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                    <TextBlock Text="• Super Administrátor: Má neomezený přístup ke všem základnám a funkcím systému v rámci celé AČR." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                </StackPanel>
+
+                <TextBlock Text="3. Správa databáze a otázek" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,10" LineHeight="22" Text="Při vytváření zkušebních otázek máte na výběr ze dvou typů a vztahují se na ně pravidla vlastnictví:"/>
+                <StackPanel Margin="15,0,0,25">
+                    <TextBlock Text="• Test (Výběr ze 3 možností): Vyžaduje zadání 3 odpovědí a označení jedné správné. Při generování testu se pořadí odpovědí A, B, C automaticky náhodně míchá pro každého zkoušeného." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                    <TextBlock Text="• Otevřená (Psaná odpověď): V testu se vygenerují linky pro ruční vypsání odpovědi. Testovaný je hodnocen instruktorem individuálně. Ke každé otevřené otázce je možné nahrát obrazovou přílohu (schéma), která se tiskne na konec testu." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                    <TextBlock Text="• Vlastnictví otázky: Každá otázka je pevně spjata se svým autorem. Upravovat nebo mazat otázku smí pouze její vlastník nebo Super Administrátor. V případě deaktivace účtu instruktora přejde vlastnictví jeho otázek automaticky na lokálního administrátora." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                </StackPanel>
+
+                <TextBlock Text="4. Generování zkušebních testů" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,10" LineHeight="22" Text="Systém nyní nabízí dva hlavní režimy tvorby testů:"/>
+                <StackPanel Margin="15,0,0,10">
+                    <TextBlock Text="• Automatický režim (Náhodný výběr): Algoritmus se řídí pravidlem 80/20. Pokud je generován test např. pro 2. třídu, 20 % otázek se vybere z těžké 2. třídy a 80 % ze základní 3. třídy. Pro test na 3. třídu se použije 100 % otázek ze 3. třídy. Všechny otázky v testu se následně zcela náhodně zamíchají." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                    <TextBlock Text="• Manuální režim (Vlastní výběr): Instruktor si test poskládá ručně. Po přepnutí přepínače se zobrazí seznam dostupných otázek a jednoduchým kliknutím na řádek s otázkou si instruktor sestaví test přesně na míru. Každá manuálně vybraná otázka má v testu hodnotu 1 bodu." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                </StackPanel>
+                <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,25" LineHeight="22">
+            Testy se dělí do několika kategorií (Průřezový, Typový výcvik - Teorie / Provozní, Závěrečný test, Průběžný test). Výběr typu testu filtruje dostupné otázky a formátuje hlavičku výsledného dokumentu.
+                </TextBlock>
+
+                <TextBlock Text="5. Výstupy a tisk (PDF dokumenty)" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,10" LineHeight="22" Text="Aplikace automaticky generuje testy do formátu PDF, optimalizované pro oboustranný tisk. Struktura vygenerovaného dokumentu:"/>
+                <StackPanel Margin="15,0,0,25">
+                    <TextBlock Text="1. Titulní strana: Záznamy o základně, testovaném a prostor pro hodnocení." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                    <TextBlock Text="2. Zkušební test: Zadání otázek a možností." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                    <TextBlock Text="3. Přílohy: Samostatné stránky se schématy k otevřeným otázkám (orientace na výšku/šířku se upravuje automaticky)." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                    <TextBlock Text="4. Klíč správných odpovědí: Přehledná tabulka pro instruktora vytištěná na posledním samostatném listu." TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,5"/>
+                </StackPanel>
+
+                <TextBlock Text="6. Historie a vyhodnocení" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,40" LineHeight="22">
+            V záložce Dashboard aplikace sama upozorňuje na techniky, kterým se blíží expirace přezkoušení, a na testy, které čekají na zadání výsledku. Výsledek (počet bodů) se zadává přímo v aplikaci; systém automaticky spočítá procentuální úspěšnost (limit je 80 %). Ke každému vyhodnocení je možné přidat doplňující slovní poznámku, která zůstává uložena v historii přezkoušení.
+                </TextBlock>
+
+                <TextBlock Text="7. Bug report a požadavek na vývoj" FontSize="20" FontWeight="SemiBold" Margin="0,0,0,10"/>
+                <TextBlock TextWrapping="Wrap" FontSize="14" Foreground="LightGray" Margin="0,0,0,20" LineHeight="22">
+            V případě zjištění chyby v aplikaci nebo pokud máte návrh na vylepšení, neváhejte kontaktovat autora prostřednictvím emailu: <Run Text="jan.k.koranda@gmail.com"/>
+                </TextBlock>
+            </StackPanel>
+        </ScrollViewer>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Margin="0,20,0,0">
+            <Border Background="#333333" CornerRadius="4" Padding="8,4">
+                <TextBlock Text="OFFLINE-FIRST ENGINE" FontSize="10" FontWeight="Bold" Foreground="White"/>
+            </Border>
+            <Border Background="#008060" CornerRadius="4" Padding="8,4" Margin="10,0">
+                <TextBlock Text="SUPABASE CLOUD SYNC" FontSize="10" FontWeight="Bold" Foreground="White"/>
+            </Border>
+            <TextBlock Text="© 2026 [Jan Koranda / 24. základna dopravního letectva Praha Kbely]" VerticalAlignment="Center" Foreground="Gray" FontSize="12" Margin="10,0,0,0"/>
+        </StackPanel>
+    </Grid>
 </Page>

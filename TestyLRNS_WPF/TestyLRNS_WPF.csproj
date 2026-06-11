@@ -7,7 +7,17 @@
     <ImplicitUsings>enable</ImplicitUsings>
     <UseWPF>true</UseWPF>
     <PlatformTarget>x64</PlatformTarget>
+    <ApplicationIcon>Assets\RTZ_Badge.ico</ApplicationIcon>
   </PropertyGroup>
+
+  <ItemGroup>
+    <None Remove="Assets\RTZ_Badge.ico" />
+    <None Remove="Assets\RTZ_Badge.png" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="Assets\RTZ_Badge.ico" />
+  </ItemGroup>
 
   <ItemGroup>
     <PackageReference Include="Microsoft.Data.Sqlite" Version="10.0.8" />
@@ -16,6 +26,11 @@
 	<PackageReference Include="ModernWpfUI" Version="0.9.6" />
 	<PackageReference Include="SkiaSharp" Version="3.119.4" />
 	<PackageReference Include="SQLitePCLRaw.bundle_e_sqlite3" Version="3.0.3" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Resource Include="Assets\RTZ_Badge.ico" />
+    <Resource Include="Assets\RTZ_Badge.png" />
   </ItemGroup>
 
   <ItemGroup>

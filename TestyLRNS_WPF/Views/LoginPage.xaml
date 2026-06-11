@@ -14,7 +14,11 @@
                 BorderBrush="#333333" BorderThickness="1">
 
             <StackPanel>
-                <ui:FontIcon Glyph="&#xE707;" FontSize="56" Foreground="#00509E" Margin="0,0,0,15"/>
+                <Image Source="/Assets/rtz_badge.png" 
+                    Width="120" Height="120" 
+                    Stretch="Uniform" 
+                    HorizontalAlignment="Center" 
+                    Margin="0,0,0,20"/>
                 <TextBlock Text="Zkušební systém LRNS" FontSize="22" FontWeight="Bold" HorizontalAlignment="Center" Foreground="White" Margin="0,0,0,5"/>
                 <TextBlock Text="Přihlaste se ke svému účtu" FontSize="14" Foreground="Gray" HorizontalAlignment="Center" Margin="0,0,0,25"/>
 

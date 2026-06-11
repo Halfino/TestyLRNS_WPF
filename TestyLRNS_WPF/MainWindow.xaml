@@ -19,7 +19,11 @@
 
             <ui:NavigationView.PaneHeader>
                 <StackPanel Orientation="Horizontal" Margin="12,10,0,10">
-                    <TextBlock FontFamily="Segoe MDL2 Assets" Text="&#xE707;" FontSize="24" Foreground="#00509E" Margin="0,0,12,0" VerticalAlignment="Center"/>
+                    <Image Source="/Assets/RTZ_Badge.png" 
+       Width="40" Height="40" 
+       Stretch="Uniform" 
+       HorizontalAlignment="Center" 
+       Margin="0,2,5,0"/>
                     <TextBlock Text="LRNS AČR" FontWeight="Bold" FontSize="18" VerticalAlignment="Center"/>
                 </StackPanel>
             </ui:NavigationView.PaneHeader>
