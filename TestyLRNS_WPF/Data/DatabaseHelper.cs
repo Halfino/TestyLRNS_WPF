@@ -33,9 +33,6 @@ namespace TestyLRNS_WPF.Data
             EnsureDatabaseExists();
             EnsureTablesExist();
             SeedDefaultData();
-
-            // VYPNUTO PRO PRODUKCI: Máme cloud, nechceme generovat 300 falešných otázek na každém novém PC!
-            // SeedDummyQuestions(); 
         }
 
         private static void EnsureDatabaseExists()
@@ -192,8 +189,7 @@ namespace TestyLRNS_WPF.Data
                     ("11111111-0000-0000-0000-000000000010", "RP", "RSP"),
                     ("11111111-0000-0000-0000-000000000011", "VCS", "LSLPS"),
                     ("11111111-0000-0000-0000-000000000012", "LETVIS", "LSLPS"),
-                    ("11111111-0000-0000-0000-000000000013", "SITE", "LSLPS"),
-                    ("11111111-0000-0000-0000-000000000014", "ENERGETIKA", "LSLPS")
+                    ("11111111-0000-0000-0000-000000000012", "AMS", "LSLPS")
                 };
 
                 using var transaction = connection.BeginTransaction();
@@ -212,10 +208,10 @@ namespace TestyLRNS_WPF.Data
             using var checkUsersCmd = new SqliteCommand("SELECT COUNT(*) FROM Users", connection);
             if (Convert.ToInt64(checkUsersCmd.ExecuteScalar()) == 0)
             {
-                string defaultPassword = Services.SecurityService.HashPassword("123");
+                string defaultPassword = Services.SecurityService.HashPassword("1234");
 
                 var users = new (string Gid, string Username, string Role, string? Unit, string? Icao)[] {
-                    ("22222222-0000-0000-0000-000000000001", "SuperAdmin", "SuperAdmin", null, null),
+                    ("22222222-0000-0000-0000-000000000001", "Admin", "SuperAdmin", null, null),
                     ("22222222-0000-0000-0000-000000000002", "LKKB", "LokalniAdmin", null, "LKKB"),
                     ("22222222-0000-0000-0000-000000000003", "LKCV", "LokalniAdmin", null, "LKCV"),
                     ("22222222-0000-0000-0000-000000000004", "LKNA", "LokalniAdmin", null, "LKNA"),
