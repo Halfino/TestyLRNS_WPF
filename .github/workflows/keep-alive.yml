@@ -18,6 +18,6 @@ jobs:
       - name: Ping Supabase API
         # Pošle dotaz na tabulku SystemTopics, omezí výsledek na 1 řádek a načte jen global_id, aby šetřil data.
         run: |
-          curl -X GET "${{ secrets.SUPABASE_URL }}/systemtopics?select=global_id&limit=1" \
+          curl -X GET "${{ secrets.SUPABASE_URL }}/system_topics?select=global_id&limit=1" \
           -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
           -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}"
