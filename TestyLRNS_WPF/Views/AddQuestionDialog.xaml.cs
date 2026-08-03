@@ -176,7 +176,11 @@ namespace TestyLRNS_WPF.Views
             if (CbAirport.SelectedIndex < 0) return null;
             string? fullContent = CbAirport.SelectedItem?.ToString();
             if (string.IsNullOrEmpty(fullContent)) return null;
-            return fullContent.Split(' ')[0];
+            string icao = fullContent.Split(' ')[0];
+
+            if (icao == "Globální") return null;
+
+            return icao;
         }
 
         private void UpdateTopicsDropdown(string? unit)

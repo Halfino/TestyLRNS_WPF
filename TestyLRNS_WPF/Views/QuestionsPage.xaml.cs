@@ -88,7 +88,10 @@ namespace TestyLRNS_WPF.Views
                 IsOperationalString = q.IsOperationalTraining ? "ANO" : "NE",
                 OperationalColor = q.IsOperationalTraining ? new SolidColorBrush(Colors.Orange) : new SolidColorBrush(Colors.Gray),
                 AirportIcao = q.AirportIcao,
-                LocalityString = string.IsNullOrEmpty(q.AirportIcao) ? "Globální" : $"Místní ({q.AirportIcao})",
+
+                // OPRAVA: Mapování lokality i pro existující chybné záznamy
+                LocalityString = (string.IsNullOrEmpty(q.AirportIcao) || q.AirportIcao == "Globální") ? "Globální" : $"Místní ({q.AirportIcao})",
+
                 OwnerId = q.OwnerId,
                 OwnerName = q.OwnerName,
                 CanEdit = (_currentUser.Role == "SuperAdmin" || q.OwnerId == _currentUser.Id || q.OwnerId == null)
@@ -97,7 +100,6 @@ namespace TestyLRNS_WPF.Views
             UpdateTopicsDropdown();
             ApplyFilter();
         }
-
         private void UpdateTopicsDropdown()
         {
             if (CbTopicFilter == null) return;
@@ -154,11 +156,13 @@ namespace TestyLRNS_WPF.Views
             }
             else if (_currentUser.Role == "LokalniAdmin")
             {
-                filtered = filtered.Where(q => string.IsNullOrEmpty(q.AirportIcao) || q.AirportIcao == _currentAirportIcao);
+                // OPRAVA: Zahrnutí "Globální"
+                filtered = filtered.Where(q => string.IsNullOrEmpty(q.AirportIcao) || q.AirportIcao == "Globální" || q.AirportIcao == _currentAirportIcao);
             }
             else
             {
-                filtered = filtered.Where(q => (string.IsNullOrEmpty(q.AirportIcao) || q.AirportIcao == _currentAirportIcao)
+                // OPRAVA: Zahrnutí "Globální"
+                filtered = filtered.Where(q => (string.IsNullOrEmpty(q.AirportIcao) || q.AirportIcao == "Globální" || q.AirportIcao == _currentAirportIcao)
                                                && q.UnitRaw == _currentUser.Unit);
             }
 
@@ -192,7 +196,8 @@ namespace TestyLRNS_WPF.Views
 
             if (CbLocalityFilter.SelectedIndex == 1)
             {
-                filtered = filtered.Where(q => string.IsNullOrEmpty(q.AirportIcao));
+                // OPRAVA: Filtrování pouze na Globální
+                filtered = filtered.Where(q => string.IsNullOrEmpty(q.AirportIcao) || q.AirportIcao == "Globální");
             }
             else if (CbLocalityFilter.SelectedIndex == 2)
             {

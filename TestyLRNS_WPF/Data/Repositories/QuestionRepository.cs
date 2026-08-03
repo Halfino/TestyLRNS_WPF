@@ -28,7 +28,7 @@ namespace TestyLRNS_WPF.Data.Repositories
                 WHERE q.is_active = 1";
 
             if (!string.IsNullOrEmpty(unit)) query += " AND q.unit = @unit";
-            if (!string.IsNullOrEmpty(airportIcao)) query += " AND (q.airport_icao IS NULL OR q.airport_icao = @icao)";
+            if (!string.IsNullOrEmpty(airportIcao)) query += " AND (q.airport_icao IS NULL OR q.airport_icao = 'Globální' OR q.airport_icao = @icao)";
             if (!string.IsNullOrEmpty(systemTopic)) query += " AND q.system_topic = @topic";
 
             using var command = new SqliteCommand(query, connection);
