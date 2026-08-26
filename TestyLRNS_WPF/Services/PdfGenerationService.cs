@@ -85,7 +85,7 @@ namespace TestyLRNS_WPF.Services
                             f.Item().PaddingTop(10).Text("Datum: .......................................");
                             f.Item().PaddingTop(10).Text("Hodnocení: .......................................").Bold();
                             f.Item().PaddingTop(10).Text($"Instruktor/Inspektor: .......................................");
-                            f.Item().PaddingTop(25).Text("S hodnocením souhlasím: .......................................");
+                            f.Item().PaddingTop(25).Text("S hodnocením seznámen: .......................................");
                         });
                     });
                 });
