@@ -85,7 +85,7 @@ namespace TestyLRNS_WPF.Data.Repositories
                 FROM Questions q 
                 LEFT JOIN Users u ON q.owner_id = u.id
                 LEFT JOIN Persons p ON u.linked_person_id = p.id
-                WHERE q.id = @id AND q.is_active = 1;";
+                WHERE q.id = @id;";
 
             using var command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@id", id);
@@ -203,7 +203,7 @@ namespace TestyLRNS_WPF.Data.Repositories
         private List<Answer> GetActiveAnswersForQuestion(int questionId, SqliteConnection connection)
         {
             var answers = new List<Answer>();
-            using var command = new SqliteCommand("SELECT id, global_id, sync_status, updated_at, question_id, text, is_correct, is_active FROM Answers WHERE question_id = @qid AND is_active = 1;", connection);
+            using var command = new SqliteCommand("SELECT id, global_id, sync_status, updated_at, question_id, text, is_correct, is_active FROM Answers WHERE question_id = @qid;", connection);
             command.Parameters.AddWithValue("@qid", questionId);
 
             using var reader = command.ExecuteReader();

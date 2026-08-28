@@ -176,13 +176,23 @@ namespace TestyLRNS_WPF.Data.Repositories
         public void UpdateTestResultScore(int testId, int score, string? note)
         {
             using var connection = DatabaseHelper.GetConnection();
-            string query = "UPDATE TestResults SET score = @score, date_completed = @dateComp, note = @note, sync_status = 0, updated_at = CURRENT_TIMESTAMP WHERE id = @id;";
+
+            // Přidáno: sync_status = 0 a updated_at = @updatedAt
+            string query = @"UPDATE TestResults 
+                     SET score = @score, 
+                         date_completed = @dateComp, 
+                         note = @note,
+                         sync_status = 0,
+                         updated_at = @updatedAt
+                     WHERE id = @id;";
 
             using var command = new SqliteCommand(query, connection);
             command.Parameters.AddWithValue("@id", testId);
             command.Parameters.AddWithValue("@score", score);
             command.Parameters.AddWithValue("@dateComp", DateTime.Now);
             command.Parameters.AddWithValue("@note", (object?)note ?? DBNull.Value);
+            command.Parameters.AddWithValue("@updatedAt", DateTime.Now.ToString("O"));
+
             command.ExecuteNonQuery();
         }
 

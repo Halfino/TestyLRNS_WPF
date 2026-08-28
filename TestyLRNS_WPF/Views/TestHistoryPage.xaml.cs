@@ -119,8 +119,15 @@ namespace TestyLRNS_WPF.Views
                     var person = _personRepo.GetById(testResult.PersonId);
                     if (person == null) return;
 
-                    var allQuestions = _questionRepo.GetAllActive(person.Unit, person.AirportIcao);
-                    var originalQuestions = allQuestions.Where(q => testResult.QuestionIds.Contains(q.Id)).ToList();
+                    var originalQuestions = new List<Question>();
+                    foreach (var qId in testResult.QuestionIds)
+                    {
+                        var question = _questionRepo.GetById(qId);
+                        if (question != null)
+                        {
+                            originalQuestions.Add(question);
+                        }
+                    }
 
                     string newDir;
                     targetPath = _pdfService.GetExportFilePath(person, testResult.TestType ?? "test", out newDir);
