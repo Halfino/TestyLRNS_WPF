@@ -273,11 +273,70 @@ namespace TestyLRNS_WPF.Services
                 cmd.ExecuteNonQuery();
             });
 
+            // ==============================================================
+            // 1:1 RECONCILIATION - Ostranění záznamů smazaných v cloudu
+            // ==============================================================
+            await SyncDeletionsAsync("TestQuestions", "test_questions");
+            await SyncDeletionsAsync("TestResults", "test_results");
+            await SyncDeletionsAsync("Answers", "answers");
+            await SyncDeletionsAsync("Questions", "questions");
+            await SyncDeletionsAsync("Users", "users");
+            await SyncDeletionsAsync("Persons", "persons");
+            await SyncDeletionsAsync("SystemTopics", "system_topics");
+
             // Stažení chybějících schémat k otázkám
             await PullMissingImagesAsync();
 
             // Uložení aktuálního času po úspěšném stáhnutí všeho
             SaveLastSyncTime(DateTime.UtcNow);
+        }
+
+        private async Task SyncDeletionsAsync(string localTableName, string remoteEndpoint)
+        {
+            // 1. Stažení POUZE seznamu global_id ze Supabase (šetří data, vrací jen holé pole)
+            var request = new HttpRequestMessage(HttpMethod.Get, $"{_supabaseUrl}/{remoteEndpoint}?select=global_id");
+            var response = await _httpClient.SendAsync(request);
+            if (!response.IsSuccessStatusCode) return;
+
+            string json = await response.Content.ReadAsStringAsync();
+            using var document = JsonDocument.Parse(json);
+
+            var cloudIds = new HashSet<string>();
+            foreach (var element in document.RootElement.EnumerateArray())
+            {
+                if (element.TryGetProperty("global_id", out var idProp))
+                {
+                    cloudIds.Add(idProp.GetString()!);
+                }
+            }
+
+            // 2. Načtení lokálních IDček, která už prokazatelně byla synchronizována s cloudem (sync_status = 1)
+            var localIds = new List<string>();
+            using var connection = DatabaseHelper.GetConnection();
+            using var cmd = new SqliteCommand($"SELECT global_id FROM {localTableName} WHERE sync_status = 1;", connection);
+            using var reader = cmd.ExecuteReader();
+            while (reader.Read())
+            {
+                localIds.Add(reader.GetString(0));
+            }
+
+            // 3. Nalezení IDček, která jsou lokálně, ale v cloudu už neexistují
+            var idsToDelete = localIds.Where(id => !cloudIds.Contains(id)).ToList();
+
+            // 4. Tvrdé smazání v lokální databázi (aby odpovídala cloudu 1:1)
+            if (idsToDelete.Count > 0)
+            {
+                using var transaction = connection.BeginTransaction();
+                using var delCmd = new SqliteCommand($"DELETE FROM {localTableName} WHERE global_id = @id;", connection, transaction);
+                var idParam = delCmd.Parameters.Add("@id", SqliteType.Text);
+
+                foreach (var id in idsToDelete)
+                {
+                    idParam.Value = id;
+                    delCmd.ExecuteNonQuery();
+                }
+                transaction.Commit();
+            }
         }
 
         // ==============================================================

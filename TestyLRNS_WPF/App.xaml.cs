@@ -35,6 +35,9 @@ namespace TestyLRNS_WPF
                         MessageBoxButton.OK,
                         MessageBoxImage.Information);
                 }
+
+                // PŘIDÁNO: Spuštění úklidu databáze až poté, co případně proběhla synchronizace
+                DatabaseHelper.CleanupDeletedRecords();
             }
             catch (Exception ex)
             {

@@ -203,7 +203,7 @@ namespace TestyLRNS_WPF.Data.Repositories
         private List<Answer> GetActiveAnswersForQuestion(int questionId, SqliteConnection connection)
         {
             var answers = new List<Answer>();
-            using var command = new SqliteCommand("SELECT id, global_id, sync_status, updated_at, question_id, text, is_correct, is_active FROM Answers WHERE question_id = @qid;", connection);
+            using var command = new SqliteCommand("SELECT id, global_id, sync_status, updated_at, question_id, text, is_correct, is_active FROM Answers WHERE question_id = @qid AND is_active = 1;", connection);
             command.Parameters.AddWithValue("@qid", questionId);
 
             using var reader = command.ExecuteReader();

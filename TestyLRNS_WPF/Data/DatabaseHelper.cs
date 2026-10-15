@@ -35,6 +35,29 @@ namespace TestyLRNS_WPF.Data
             SeedDefaultData();
         }
 
+        public static void CleanupDeletedRecords()
+        {
+            try
+            {
+                using var connection = GetConnection();
+
+                // 1. Smažeme pouze ty odpovědi, které jsou neaktivní a UŽ BYLY odeslány do cloudu (sync_status = 1)
+                using var deleteCmd = new SqliteCommand("DELETE FROM Answers WHERE is_active = 0 AND sync_status = 1;", connection);
+                int deletedCount = deleteCmd.ExecuteNonQuery();
+
+                // 2. Pokud se něco smazalo, provedeme údržbu databáze (fyzické uvolnění prázdného místa v souboru .db)
+                if (deletedCount > 0)
+                {
+                    using var vacuumCmd = new SqliteCommand("VACUUM;", connection);
+                    vacuumCmd.ExecuteNonQuery();
+                }
+            }
+            catch (Exception)
+            {
+                // Bezpečná ignorace - pokud by byl soubor zamčený, úklid se prostě neprovede a zkusí se to při dalším startu
+            }
+        }
+
         private static void EnsureDatabaseExists()
         {
             if (!File.Exists(DbPath))
