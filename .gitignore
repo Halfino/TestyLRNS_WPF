@@ -362,3 +362,5 @@ MigrationBackup/
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
 /TestyLRNS_WPF/Services/SupaBaseSecrets.txt
+/Setup1
+/licence.rtf
