@@ -36,6 +36,7 @@
                         <ComboBoxItem Content="RSP"/>
                         <ComboBoxItem Content="OSZ"/>
                         <ComboBoxItem Content="LSLPS"/>
+                        <ComboBoxItem Content="Předpisy"/>
                     </ComboBox>
                 </StackPanel>
 
@@ -49,6 +50,7 @@
                         <ComboBoxItem Content="Postupový test typového výcviku (Provozní)"/>
                         <ComboBoxItem Content="Závěrečný test typového výcviku"/>
                         <ComboBoxItem Content="Průběžný test dle tématu"/>
+                        <ComboBoxItem Content="Zkouška z předpisů"/>
                     </ComboBox>
                 </StackPanel>
 

@@ -27,7 +27,11 @@ namespace TestyLRNS_WPF.Data.Repositories
                 LEFT JOIN Persons p ON u.linked_person_id = p.id
                 WHERE q.is_active = 1";
 
-            if (!string.IsNullOrEmpty(unit)) query += " AND q.unit = @unit";
+            if (!string.IsNullOrEmpty(unit))
+            {
+                // Vybere otázky pro konkrétní odbornost, otázky všeobecné (NULL) A otázky z předpisů
+                query += " AND (q.unit = @unit OR q.unit = 'Předpisy' OR q.unit IS NULL)";
+            }
             if (!string.IsNullOrEmpty(airportIcao)) query += " AND (q.airport_icao IS NULL OR q.airport_icao = 'Globální' OR q.airport_icao = @icao)";
             if (!string.IsNullOrEmpty(systemTopic)) query += " AND q.system_topic = @topic";
 
@@ -120,6 +124,12 @@ namespace TestyLRNS_WPF.Data.Repositories
 
         public void Add(Question question)
         {
+            // PŘIDÁNO: Vynucení globální platnosti (pro všechna letiště), pokud jde o Předpisy
+            if (question.Unit == "Předpisy")
+            {
+                question.AirportIcao = null;
+            }
+
             if (string.IsNullOrEmpty(question.GlobalId)) question.GlobalId = Guid.NewGuid().ToString();
             using var connection = DatabaseHelper.GetConnection();
 
@@ -159,6 +169,12 @@ namespace TestyLRNS_WPF.Data.Repositories
 
         public void Update(Question question)
         {
+            // PŘIDÁNO: Vynucení globální platnosti (pro všechna letiště), pokud jde o Předpisy
+            if (question.Unit == "Předpisy")
+            {
+                question.AirportIcao = null;
+            }
+
             using var connection = DatabaseHelper.GetConnection();
 
             string qQuery = @"UPDATE Questions 

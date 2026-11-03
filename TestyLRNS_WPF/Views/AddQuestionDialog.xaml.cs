@@ -207,6 +207,20 @@ namespace TestyLRNS_WPF.Views
             {
                 string? selectedUnit = selectedItem.Content.ToString();
                 UpdateTopicsDropdown(selectedUnit);
+
+                // PŘIDÁNO: Vizuální uzamčení letiště na "Globální", pokud jde o Předpisy
+                if (CbAirport != null)
+                {
+                    if (selectedUnit == "Předpisy")
+                    {
+                        CbAirport.SelectedIndex = 0; // Index 0 je "Globální (Všechna)"
+                        CbAirport.IsEnabled = false;
+                    }
+                    else
+                    {
+                        CbAirport.IsEnabled = true;
+                    }
+                }
             }
         }
 
@@ -349,6 +363,12 @@ namespace TestyLRNS_WPF.Views
             string? unit = (CbUnit.SelectedItem as ComboBoxItem)?.Content.ToString();
             string? selectedTopic = CbTopic.SelectedItem?.ToString();
 
+            // PŘIDÁNO: Vynucení globální platnosti pro Předpisy na úrovni dat
+            if (unit == "Předpisy")
+            {
+                airport = null;
+            }
+
             var questionAnswers = new List<Answer>();
 
             if (!isWritten)
@@ -377,7 +397,7 @@ namespace TestyLRNS_WPF.Views
                 NewQuestion = new Question
                 {
                     Text = TxtQuestionText.Text.Trim(),
-                    OwnerId = _currentUser.Id, // ZDE PŘIDÁN VLASTNÍK
+                    OwnerId = _currentUser.Id,
                     IsWritten = isWritten,
                     KnowledgeClass = dbClass,
                     Unit = unit,
