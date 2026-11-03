@@ -110,7 +110,7 @@ namespace TestyLRNS_WPF
             {
                 ContentFrame.Navigate(new Views.TestHistoryPage());
             }
-            else if (pageTag == "Help") // PŘIDÁNO: Zobrazení nové stránky s nápovědou
+            else if (pageTag == "Help") 
             {
                 ContentFrame.Navigate(new Views.HelpPage());
             }

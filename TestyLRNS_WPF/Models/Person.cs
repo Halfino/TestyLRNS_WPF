@@ -30,8 +30,8 @@ namespace TestyLRNS_WPF.Models
             1 => "3. třída",
             2 => "2. třída",
             3 => "1. třída",
-            4 => "Instruktor",
-            5 => "Inspektor",
+            4 => "1. třída (Instruktor)",
+            5 => "1. třída (Inspektor)",
             _ => $"{KnowledgeClass}. třída" // Výchozí záloha, pokud by v DB bylo jiné číslo
         };
 
