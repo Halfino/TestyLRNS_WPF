@@ -306,6 +306,17 @@ namespace TestyLRNS_WPF.Services
                 return $"Průběžný test\nTéma: {topicStr}";
             }
 
+            // PŘIDÁNO: Dynamická detekce a formátování pro zkoušku z předpisů
+            if (rawType.Contains("předpisů"))
+            {
+                var topics = questions.Where(q => !string.IsNullOrEmpty(q.SystemTopic))
+                                      .Select(q => q.SystemTopic)
+                                      .Distinct()
+                                      .ToList();
+                string topicStr = topics.Count == 1 ? topics.First()! : "";
+                return string.IsNullOrEmpty(topicStr) ? "Zkouška z předpisů" : $"Zkouška z předpisů\nTéma: {topicStr}";
+            }
+
             return rawType.ToUpper();
         }
 

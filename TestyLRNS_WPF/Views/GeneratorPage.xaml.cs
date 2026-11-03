@@ -73,6 +73,7 @@ namespace TestyLRNS_WPF.Views
                 CbUnit.SelectedIndex = 0;
             }
 
+            UpdateTestTypesVisibility();
             UpdateTopics();
         }
 
@@ -88,9 +89,53 @@ namespace TestyLRNS_WPF.Views
             }
         }
 
+        // PŘIDÁNO: Skrytí irelevantních testů, pokud jsou vybrány "Předpisy"
+        private void UpdateTestTypesVisibility()
+        {
+            if (CbUnit.SelectedItem == null || CbTestType == null) return;
+            string selectedUnit = (CbUnit.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
+
+            bool isPredpisy = selectedUnit == "Předpisy";
+
+            foreach (var item in CbTestType.Items)
+            {
+                if (item is ComboBoxItem cbItem)
+                {
+                    string content = cbItem.Content?.ToString() ?? "";
+
+                    if (isPredpisy)
+                    {
+                        // Zobrazí striktně POUZE "Zkoušku z předpisů" a skryje vše ostatní
+                        if (content.Contains("předpisů"))
+                        {
+                            cbItem.Visibility = Visibility.Visible;
+                        }
+                        else
+                        {
+                            cbItem.Visibility = Visibility.Collapsed;
+                        }
+                    }
+                    else
+                    {
+                        // Pro běžné odbornosti (SZP, RNS...) zobrazí celou nabídku testů
+                        cbItem.Visibility = Visibility.Visible;
+                    }
+                }
+            }
+
+            // Pokud je po překreslení roletky aktuálně vybraný test skrytý, automaticky ho přepne
+            if (CbTestType.SelectedItem is ComboBoxItem selectedItem && selectedItem.Visibility == Visibility.Collapsed)
+            {
+                CbTestType.SelectedIndex = isPredpisy ? 5 : 0; // Index 5 = Zkouška z předpisů, Index 0 = Průřezový
+                CbTestType.IsEnabled = false; // Zašedne (uzamkne) roletku
+            }
+        }
+
         private void CbBaseOrUnit_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
             if (_isInitializing) return;
+
+            UpdateTestTypesVisibility(); // PŘIDÁNO: Reakce na změnu odbornosti
             UpdateTopics();
             LoadPersons();
 
@@ -99,14 +144,28 @@ namespace TestyLRNS_WPF.Views
 
         private void UpdateTopics()
         {
-            if (CbUnit.SelectedItem == null) return;
+            if (CbUnit.SelectedItem == null || CbTestType == null || CbTopic == null) return;
             string selectedUnit = (CbUnit.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
 
-            var topics = _topicRepo.GetAllActiveByUnit(selectedUnit).Select(t => t.Name).ToList();
+            bool isPredpisyTest = CbTestType.SelectedIndex == 5;
 
             CbTopic.Items.Clear();
             CbTopic.Items.Add("Všechna témata (Průřez)");
-            foreach (var topic in topics)
+
+            List<string> topics = new List<string>();
+
+            if (isPredpisyTest || selectedUnit == "Předpisy")
+            {
+                // Čisté načtení předpisových témat z databáze
+                topics = _topicRepo.GetAllActiveByUnit("Předpisy").Select(t => t.Name).ToList();
+            }
+            else
+            {
+                // Čisté načtení témat zvolené odbornosti
+                topics = _topicRepo.GetAllActiveByUnit(selectedUnit).Select(t => t.Name).ToList();
+            }
+
+            foreach (var topic in topics.Distinct())
             {
                 CbTopic.Items.Add(topic);
             }
@@ -120,7 +179,9 @@ namespace TestyLRNS_WPF.Views
             string selectedBase = (CbBase.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
             string selectedUnit = (CbUnit.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
 
-            _availablePersons = _personRepo.GetAllActive(selectedUnit, selectedBase)
+            string filterUnit = selectedUnit == "Předpisy" ? "" : selectedUnit;
+
+            _availablePersons = _personRepo.GetAllActive(filterUnit, selectedBase)
                                            .OrderBy(p => p.LastName)
                                            .ToList();
 
@@ -131,7 +192,13 @@ namespace TestyLRNS_WPF.Views
         {
             if (CbTopic == null) return;
 
-            CbTopic.IsEnabled = CbTestType.SelectedIndex == 4;
+            CbTopic.IsEnabled = CbTestType.SelectedIndex == 4 || CbTestType.SelectedIndex == 5;
+
+            if (!_isInitializing)
+            {
+                UpdateTopics();
+            }
+
             if (!CbTopic.IsEnabled)
             {
                 CbTopic.SelectedIndex = 0;
@@ -156,31 +223,25 @@ namespace TestyLRNS_WPF.Views
         {
             if (TsManualMode.IsOn)
             {
-                // MANUÁLNÍ REŽIM: 
-                // Skrýt počet otázek a ukázat pravý panel s ručním výběrem
                 PanelManualSelection.Visibility = Visibility.Visible;
                 PanelQuestionCount.Visibility = Visibility.Collapsed;
 
-                // Dynamicky přesunout seznam techniků doleva pod parametry (Sloupec 0, Řádek 1)
                 Grid.SetColumn(PanelPersons, 0);
                 Grid.SetRow(PanelPersons, 1);
                 Grid.SetRowSpan(PanelPersons, 1);
-                PanelPersons.Margin = new Thickness(0, 20, 20, 0); // Vlevo přidat margin zprava a shora
+                PanelPersons.Margin = new Thickness(0, 20, 20, 0);
 
                 LoadManualQuestions();
             }
             else
             {
-                // AUTOMATICKÝ REŽIM: 
-                // Znovu ukázat počet otázek a skrýt pravý panel
                 PanelManualSelection.Visibility = Visibility.Collapsed;
                 PanelQuestionCount.Visibility = Visibility.Visible;
 
-                // Přesunout seznam techniků zpět na celé pravé okno (Sloupec 1, Řádek 0 + RowSpan 2)
                 Grid.SetColumn(PanelPersons, 1);
                 Grid.SetRow(PanelPersons, 0);
                 Grid.SetRowSpan(PanelPersons, 2);
-                PanelPersons.Margin = new Thickness(0, 0, 0, 0); // Zrušit margin
+                PanelPersons.Margin = new Thickness(0, 0, 0, 0);
             }
         }
 
@@ -210,6 +271,20 @@ namespace TestyLRNS_WPF.Views
                     if (CbTopic.SelectedIndex > 0)
                     {
                         allowedTopics = new List<string> { CbTopic.SelectedItem.ToString()! };
+                    }
+                    break;
+                case 5:
+                    if (CbTopic.SelectedIndex > 0)
+                    {
+                        allowedTopics = new List<string> { CbTopic.SelectedItem.ToString()! };
+                    }
+                    else
+                    {
+                        // Dynamické načtení všech předpisových témat z databáze
+                        allowedTopics = _topicRepo.GetAllActiveByUnit("Předpisy").Select(t => t.Name).ToList();
+
+                        // Záchranná brzda: pokud v DB ještě není žádné předpisové téma, zamezí propadnutí filtru
+                        if (allowedTopics.Count == 0) allowedTopics.Add("ZADNE_TEMA_V_DB");
                     }
                     break;
             }
@@ -259,6 +334,7 @@ namespace TestyLRNS_WPF.Views
                 return;
             }
 
+
             string testTypeStr = (CbTestType.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "Test";
 
             int questionCount = !double.IsNaN(NbQuestionCount.Value) ? (int)NbQuestionCount.Value : 30;
@@ -270,7 +346,6 @@ namespace TestyLRNS_WPF.Views
             switch (CbTestType.SelectedIndex)
             {
                 case 0:
-                    includeOp = false; onlyOp = false; break;
                 case 1:
                     includeOp = false; onlyOp = false; break;
                 case 2:
@@ -281,6 +356,18 @@ namespace TestyLRNS_WPF.Views
                     if (CbTopic.SelectedIndex > 0)
                     {
                         allowedTopics = new List<string> { CbTopic.SelectedItem.ToString()! };
+                    }
+                    break;
+                case 5:
+                    if (CbTopic.SelectedIndex > 0)
+                    {
+                        allowedTopics = new List<string> { CbTopic.SelectedItem.ToString()! };
+                    }
+                    else
+                    {
+                        // Dynamické načtení pro automatický generátor
+                        allowedTopics = _topicRepo.GetAllActiveByUnit("Předpisy").Select(t => t.Name).ToList();
+                        if (allowedTopics.Count == 0) allowedTopics.Add("ZADNE_TEMA_V_DB");
                     }
                     break;
             }
@@ -302,7 +389,6 @@ namespace TestyLRNS_WPF.Views
 
                     if (TsManualMode.IsOn)
                     {
-                        // MANUÁLNÍ REŽIM
                         questionsForPdf = LvManualQuestions.SelectedItems.Cast<Question>().ToList();
 
                         if (questionsForPdf.Count == 0)
@@ -325,7 +411,6 @@ namespace TestyLRNS_WPF.Views
                     }
                     else
                     {
-                        // AUTOMATICKÝ REŽIM
                         result = _testGenService.GenerateTest(
                             selectedPerson, _currentUser, testTypeStr, questionCount,
                             allowedTopics, includeOp, onlyOp);

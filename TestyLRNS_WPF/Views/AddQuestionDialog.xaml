@@ -120,6 +120,7 @@
                         <ComboBoxItem Content="RSP"/>
                         <ComboBoxItem Content="OSZ"/>
                         <ComboBoxItem Content="LSLPS"/>
+                        <ComboBoxItem Content="Předpisy"/>
                     </ComboBox>
                 </StackPanel>
 

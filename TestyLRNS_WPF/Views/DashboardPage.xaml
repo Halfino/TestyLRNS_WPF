@@ -71,7 +71,7 @@
                     <StackPanel Orientation="Horizontal">
                         <ui:FontIcon Glyph="&#xE8F1;" FontSize="32" Foreground="#00509E" VerticalAlignment="Center" Margin="0,0,15,0"/>
                         <StackPanel>
-                            <TextBlock Text="Otázky tvé odbornosti" FontSize="14" Foreground="Gray"/>
+                            <TextBlock Text="Otázek v databázi" FontSize="14" Foreground="Gray"/>
                             <TextBlock x:Name="TxtTotalQuestionsCount" Text="0" FontSize="28" FontWeight="Bold"/>
                         </StackPanel>
                     </StackPanel>
