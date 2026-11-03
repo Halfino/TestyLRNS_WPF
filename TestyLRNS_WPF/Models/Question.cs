@@ -44,5 +44,19 @@ namespace TestyLRNS_WPF.Models
 
         protected void OnPropertyChanged(string name) =>
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(name));
+
+        public string KnowledgeClassText
+        {
+            get
+            {
+                return KnowledgeClass switch
+                {
+                    1 => "3. třída",
+                    2 => "2. třída",
+                    3 => "1. třída",
+                    _ => "?"
+                };
+            }
+        }
     }
 }

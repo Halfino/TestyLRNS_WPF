@@ -61,7 +61,9 @@ namespace TestyLRNS_WPF.Services
 
             // --- 3. NAČTENÍ A PŘEDFILTRACE POOLU OTÁZEK ---
             // Repo nám vytáhne aktivní otázky pro danou odbornost (a "Všeobecné") a letiště (a "Globální")
-            var allQuestions = _questionRepo.GetAllActive(person.Unit, person.AirportIcao);
+            string queryUnit = testType != null && testType.Contains("předpisů") ? "Předpisy" : person.Unit;
+
+            var allQuestions = _questionRepo.GetAllActive(queryUnit, person.AirportIcao);
 
             // Filtrace podle témat (Průběžný test vs Průřezový)
             if (allowedTopics != null && allowedTopics.Any())

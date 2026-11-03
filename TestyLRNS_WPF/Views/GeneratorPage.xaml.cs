@@ -252,7 +252,10 @@ namespace TestyLRNS_WPF.Views
             string selectedBase = (CbBase.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
             string selectedUnit = (CbUnit.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
 
-            var allDbQuestions = _questionRepo.GetAllActive(selectedUnit, selectedBase);
+            // Přepis odbornosti, pokud se generují předpisy
+            string queryUnit = CbTestType.SelectedIndex == 5 ? "Předpisy" : selectedUnit;
+
+            var allDbQuestions = _questionRepo.GetAllActive(queryUnit, selectedBase);
 
             bool includeOp = false;
             bool onlyOp = false;
@@ -378,7 +381,8 @@ namespace TestyLRNS_WPF.Views
 
             string selectedBase = (CbBase.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
             string selectedUnit = (CbUnit.SelectedItem as ComboBoxItem)?.Content.ToString() ?? "";
-            var allDbQuestions = _questionRepo.GetAllActive(selectedUnit, selectedBase);
+            string queryUnit = CbTestType.SelectedIndex == 5 ? "Předpisy" : selectedUnit;
+            var allDbQuestions = _questionRepo.GetAllActive(queryUnit, selectedBase);
 
             foreach (Person selectedPerson in LvPersons.SelectedItems)
             {

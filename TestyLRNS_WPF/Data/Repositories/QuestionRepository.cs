@@ -13,7 +13,6 @@ namespace TestyLRNS_WPF.Data.Repositories
             var questions = new List<Question>();
             using var connection = DatabaseHelper.GetConnection();
 
-            // PŘIDÁNO: LEFT JOIN na tabulku Persons a složení jména přes CASE
             string query = @"
                 SELECT q.id, q.global_id, q.sync_status, q.updated_at, q.text, q.written, q.knowledge_class, q.unit, q.system_topic, 
                 q.airport_icao, q.is_operational_training, q.is_active, q.image_path,
@@ -27,19 +26,28 @@ namespace TestyLRNS_WPF.Data.Repositories
                 LEFT JOIN Persons p ON u.linked_person_id = p.id
                 WHERE q.is_active = 1";
 
+            // PŘEPRACOVANÁ LOGIKA FILTRACE ODBORNOSTI:
             if (!string.IsNullOrEmpty(unit))
             {
-                // Vybere otázky pro konkrétní odbornost, otázky všeobecné (NULL) A otázky z předpisů
-                query += " AND (q.unit = @unit OR q.unit = 'Předpisy' OR q.unit IS NULL)";
+                if (unit == "Předpisy" )
+                {
+                    // Zkouška z předpisů: Vytáhne pouze Předpisy a všeobecné otázky (NULL)
+                    query += " AND (q.unit = 'Předpisy' OR q.unit IS NULL)";
+                }
+                else
+                {
+                    // Běžná odbornost (např. SZP): Vytáhne SZP a všeobecné otázky, ale NEZAHRNE Předpisy
+                    query += " AND (q.unit = @unit OR q.unit IS NULL)";
+                }
             }
+
             if (!string.IsNullOrEmpty(airportIcao)) query += " AND (q.airport_icao IS NULL OR q.airport_icao = 'Globální' OR q.airport_icao = @icao)";
             if (!string.IsNullOrEmpty(systemTopic)) query += " AND q.system_topic = @topic";
 
             using var command = new SqliteCommand(query, connection);
-            if (!string.IsNullOrEmpty(unit)) command.Parameters.AddWithValue("@unit", unit);
+            if (!string.IsNullOrEmpty(unit) && unit != "Předpisy") command.Parameters.AddWithValue("@unit", unit);
             if (!string.IsNullOrEmpty(airportIcao)) command.Parameters.AddWithValue("@icao", airportIcao);
             if (!string.IsNullOrEmpty(systemTopic)) command.Parameters.AddWithValue("@topic", systemTopic);
-
             using var reader = command.ExecuteReader();
             while (reader.Read())
             {

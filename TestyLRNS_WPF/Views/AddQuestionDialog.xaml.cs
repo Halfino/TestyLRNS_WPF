@@ -1,4 +1,5 @@
 ﻿using Microsoft.Win32;
+using ModernWpf.Controls;
 using SkiaSharp;
 using System;
 using System.Collections.Generic;
@@ -215,10 +216,16 @@ namespace TestyLRNS_WPF.Views
                     {
                         CbAirport.SelectedIndex = 0; // Index 0 je "Globální (Všechna)"
                         CbAirport.IsEnabled = false;
+                        TsOperational.IsOn = false;
+                        TsOperational.IsEnabled = false;
+                        CbClass.SelectedIndex = 0;
+                        CbClass.IsEnabled = false;
                     }
                     else
                     {
                         CbAirport.IsEnabled = true;
+                        TsOperational.IsEnabled = true;
+                        CbClass.IsEnabled = true;
                     }
                 }
             }
